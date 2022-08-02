@@ -41,10 +41,10 @@ library(dplyr)
 #                                         "Case")))
 # otu_rel_abund <<- NA
 server <- function(input, output) {
-  observe({
-    if (is.null(input$probe1)) return()
-    file.copy(input$upload$datapath, "C:/ShinyR")
-  })
+  # observe({
+  #   if (is.null(input$probe1)) return()
+  #   file.copy(input$upload$datapath, "C:/ShinyR")
+  # })
     # sample1 <- read_table(input$probe1)
     # sample2 <- read_table(input$probe2)
     # sample3 <- read_table(input$probe3)
@@ -52,38 +52,40 @@ server <- function(input, output) {
     # probe1 <- reactive(input$probe1)
     # probe2 <- reactive(input$probe2)
     # probe3 <- reactive(input$probe3)
-    metadata <- read_file(, na="NA") %>%
-      select(sample_id, disease_stat) %>%
-      drop_na(disease_stat)
-    otu_counts <- read_table(sample2) %>%
-      select(Group, starts_with("Otu")) %>%
-      rename(sample_id = Group) %>%
-      pivot_longer(-sample_id, names_to="otu", values_to = "count")
-    taxonomy <- read_table(sample3) %>%
-      select("OTU", "Taxonomy") %>%
-      rename_all(tolower) %>%
-      mutate(taxonomy = str_replace_all(taxonomy, "\\(\\d+\\)", ""),
-             taxonomy = str_replace(taxonomy, ";$", "")) %>%
-      separate(taxonomy,
-               into=c("kingdom", "phylum", "class", "order", "family", "genus"),
-               sep=";")
     
-    otu_rel_abund <- inner_join(metadata, otu_counts, by="sample_id") %>%
-      inner_join(., taxonomy, by="otu") %>%
-      group_by(sample_id) %>%
-      mutate(rel_abund = count / sum(count)) %>%
-      ungroup() %>%
-      select(-count) %>%
-      pivot_longer(c("kingdom", "phylum", "class", "order", "family", "genus", "otu"),
-                   names_to="level",
-                   values_to="taxon") %>%
-      mutate(disease_stat = factor(disease_stat,
-                                   levels=c("NonDiarrhealControl",
-                                            "DiarrhealControl",
-                                            "Case")))
     
     data <- reactive({
       req(input$probe1, input$probe2, input$probe3, input$case,input$pool, input$class)
+      metadata <- read_file(, na="NA") %>%
+        select(sample_id, disease_stat) %>%
+        drop_na(disease_stat)
+      otu_counts <- read_table(sample2) %>%
+        select(Group, starts_with("Otu")) %>%
+        rename(sample_id = Group) %>%
+        pivot_longer(-sample_id, names_to="otu", values_to = "count")
+      taxonomy <- read_table(sample3) %>%
+        select("OTU", "Taxonomy") %>%
+        rename_all(tolower) %>%
+        mutate(taxonomy = str_replace_all(taxonomy, "\\(\\d+\\)", ""),
+               taxonomy = str_replace(taxonomy, ";$", "")) %>%
+        separate(taxonomy,
+                 into=c("kingdom", "phylum", "class", "order", "family", "genus"),
+                 sep=";")
+      
+      otu_rel_abund <- inner_join(metadata, otu_counts, by="sample_id") %>%
+        inner_join(., taxonomy, by="otu") %>%
+        group_by(sample_id) %>%
+        mutate(rel_abund = count / sum(count)) %>%
+        ungroup() %>%
+        select(-count) %>%
+        pivot_longer(c("kingdom", "phylum", "class", "order", "family", "genus", "otu"),
+                     names_to="level",
+                     values_to="taxon") %>%
+        mutate(disease_stat = factor(disease_stat,
+                                     levels=c("NonDiarrhealControl",
+                                              "DiarrhealControl",
+                                             "Case")))
+
       taxon_rel_abund <- otu_rel_abund %>%
         filter(level==input$class) %>%
         group_by(disease_stat, sample_id, taxon) %>%
