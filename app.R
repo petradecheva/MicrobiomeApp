@@ -1,11 +1,5 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+
+#! Please make a "www" folder in the working directory first !
 
 library(shiny)
 
@@ -31,5 +25,4 @@ server <- function(input, output, session) {
     # dp <- paste(str1,str2, sep = "")
     # file.copy(input$upload, dp, overwrite = TRUE)
 }
-# Run the application 
 shinyApp(ui = ui, server = server)
