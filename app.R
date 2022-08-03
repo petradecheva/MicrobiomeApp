@@ -9,15 +9,18 @@ ui <- fluidPage(
   tableOutput("files")
 )
 server <- function(input, output, session) {
-  output$files <- renderTable(input$upload)
+  
   observe({
     if (is.null(input$upload)) return()
     str1 <- getwd()
     print(str1)
-    str2 <- "\\www"
+    str2 <- "/www"
     dp <- paste(str1,str2, sep = "")
+    # file.create(dp)
     file.copy(input$upload, dp, overwrite = FALSE)
+    output$files <- renderTable("1.tsv")
   })
+  
   
     #if (is.null(input$upload)) return()
     # str1 <- wd

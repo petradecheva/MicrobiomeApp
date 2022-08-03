@@ -143,7 +143,7 @@ ui <- fluidPage(
   headerPanel('Microbiome'),
   sidebarPanel(
     fileInput("probe1", "Choose metadata .XLSX File", accept = "xlsx", buttonLabel = "Browse"),
-    fileInput("probe2", "Choose otu_counts .TSV File", accept = "tsv", buttonLabel = "Browse"),
+    fileInput("probe2", "Choose otu_counts (subsample.shared) .TSV File", accept = "tsv", buttonLabel = "Browse"),
     fileInput("probe3", "Choose taxonomy .TSV File", accept = "tsv", buttonLabel = "Browse"),
     sliderInput(inputId = "pool", label = strong("choose value for grouping"),
                 min = 0, max = 100, value = 3),

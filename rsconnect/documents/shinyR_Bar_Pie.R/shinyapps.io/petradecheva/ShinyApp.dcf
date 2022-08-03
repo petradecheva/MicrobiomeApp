@@ -1,0 +1,14 @@
+name: ShinyApp
+title: ShinyApp
+username:
+account: petradecheva
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6689640
+bundleId: 6130488
+url: https://petradecheva.shinyapps.io/ShinyApp/
+when: 1658756463.75721
+lastSyncTime: 1658756463.75723
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData|schubert.cons.taxonomy.tsv|schubert.metadata.xlsx|schubert.subsample.shared.tsv|shinyR.R|shinyR_Taxons_plot.R|shinyR_Taxons_Table.R|shinyRClass.R

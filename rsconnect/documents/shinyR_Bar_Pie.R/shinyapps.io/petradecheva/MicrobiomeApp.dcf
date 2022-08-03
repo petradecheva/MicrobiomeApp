@@ -1,0 +1,14 @@
+name: MicrobiomeApp
+title: MicrobiomeApp
+username:
+account: petradecheva
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6691320
+bundleId: 6133856
+url: https://petradecheva.shinyapps.io/MicrobiomeApp/
+when: 1658832177.75833
+lastSyncTime: 1658832177.75834
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData|schubert.cons.taxonomy.tsv|schubert.metadata.xlsx|schubert.subsample.shared.tsv|shinyR.R|shinyR_Taxons_plot.R|shinyR_Taxons_Table.R|shinyRClass.R
