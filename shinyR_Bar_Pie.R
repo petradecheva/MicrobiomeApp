@@ -7,63 +7,17 @@ library(ggtext)
 library(RColorBrewer)
 library(dplyr)
 
-# metadata <- read_tsv("https://raw.githubusercontent.com/riffomonas/minimalR-raw_data/master/schubert.metadata.tsv", na="NA") %>%
-#   select(sample_id, disease_stat) %>%
-#   drop_na(disease_stat)
-# 
-# 
-# otu_counts <- read_tsv("https://raw.githubusercontent.com/riffomonas/minimalR-raw_data/master/schubert.subsample.shared") %>%
-#   select(Group, starts_with("Otu")) %>%
-#   rename(sample_id = Group) %>%
-#   pivot_longer(-sample_id, names_to="otu", values_to = "count")
-# 
-# taxonomy <- read_tsv("https://raw.githubusercontent.com/milievaiv/shinyexperiments/main/schubert.cons.taxonomy.tsv") %>%
-#   select("OTU", "Taxonomy") %>%
-#   rename_all(tolower) %>%
-#   mutate(taxonomy = str_replace_all(taxonomy, "\\(\\d+\\)", ""),
-#          taxonomy = str_replace(taxonomy, ";$", "")) %>%
-#   separate(taxonomy,
-#            into=c("kingdom", "phylum", "class", "order", "family", "genus"),
-#            sep=";")
-# 
-# otu_rel_abund <- inner_join(metadata, otu_counts, by="sample_id") %>%
-#   inner_join(., taxonomy, by="otu") %>%
-#   group_by(sample_id) %>%
-#   mutate(rel_abund = count / sum(count)) %>%
-#   ungroup() %>%
-#   select(-count) %>%
-#   pivot_longer(c("kingdom", "phylum", "class", "order", "family", "genus", "otu"),
-#                names_to="level",
-#                values_to="taxon") %>%
-#   mutate(disease_stat = factor(disease_stat,
-#                                levels=c("NonDiarrhealControl",
-#                                         "DiarrhealControl",
-#                                         "Case")))
-# otu_rel_abund <<- NA
-server <- function(input, output) {
-  # observe({
-  #   if (is.null(input$probe1)) return()
-  #   file.copy(input$upload$datapath, "C:/ShinyR")
-  # })
-    # sample1 <- read_table(input$probe1)
-    # sample2 <- read_table(input$probe2)
-    # sample3 <- read_table(input$probe3)
-    # print(sample1, sample2, sample3)
-    # probe1 <- reactive(input$probe1)
-    # probe2 <- reactive(input$probe2)
-    # probe3 <- reactive(input$probe3)
-    
-    
+server <- function(session, input, output) {
     data <- reactive({
-      req(input$probe1, input$probe2, input$probe3, input$case,input$pool, input$class)
-      metadata <- read_file(, na="NA") %>%
+      req(input$probe1, input$probe2, input$probe3)
+      metadata <- read_excel(input$probe1$datapath, na="NA") %>%
         select(sample_id, disease_stat) %>%
         drop_na(disease_stat)
-      otu_counts <- read_table(sample2) %>%
+      otu_counts <- read_tsv(input$probe2$datapath) %>%
         select(Group, starts_with("Otu")) %>%
         rename(sample_id = Group) %>%
         pivot_longer(-sample_id, names_to="otu", values_to = "count")
-      taxonomy <- read_table(sample3) %>%
+      taxonomy <- read_tsv(input$probe3$datapath) %>%
         select("OTU", "Taxonomy") %>%
         rename_all(tolower) %>%
         mutate(taxonomy = str_replace_all(taxonomy, "\\(\\d+\\)", ""),
@@ -85,8 +39,15 @@ server <- function(input, output) {
                                      levels=c("NonDiarrhealControl",
                                               "DiarrhealControl",
                                              "Case")))
-
-      taxon_rel_abund <- otu_rel_abund %>%
+    })
+    observe({
+      req(data())
+      updateSelectInput(session, "case", choices = unique(data()$disease_stat))
+      updateSelectInput(session, "class", choices = unique(data()$level))
+    })
+   data2 <- reactive({
+      req(input$case,input$pool, input$class)
+      taxon_rel_abund <- data() %>%
         filter(level==input$class) %>%
         group_by(disease_stat, sample_id, taxon) %>%
         summarize(rel_abund = sum(rel_abund), .groups="drop") %>%
@@ -112,10 +73,10 @@ server <- function(input, output) {
                taxon = fct_shift(taxon, n=1)) %>%
         filter(disease_stat == input$case)
   })
-  print(data)
+  
   myfilename<-reactive(paste("plot-",input$case,"-", input$class,"-", input$plot,".", input$format, sep = ""))
   barchart <- function(){
-      ggplot(data(), aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
+      ggplot(data2(), aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
       geom_col() +
       scale_x_discrete(breaks=c("NonDiarrhealControl",
                                 "DiarrhealControl",
@@ -132,7 +93,7 @@ server <- function(input, output) {
             legend.key.size = unit(10, "pt"))
   }
   piechart <- function(){
-      ggplot(data(), aes(x="", y=mean_rel_abund, fill=taxon)) +
+      ggplot(data2(), aes(x="", y=mean_rel_abund, fill=taxon)) +
       geom_bar(stat="identity", width=1) +
       # geom_text(aes(label = round(mean_rel_abund, digits = 0)),
       #           position = position_stack(vjust = 0.5))+
@@ -143,24 +104,6 @@ server <- function(input, output) {
       theme_classic()
       
   }
-  output$moreControls <- renderUI({
-    tagList(
-        fileInput("probe1", "Choose metadata .TSV File", accept = "tsv", buttonLabel = "Browse"),
-        fileInput("probe2", "Choose otu_counts .TSV File", accept = "tsv", buttonLabel = "Browse"),
-        fileInput("probe3", "Choose taxonomy .TSV File", accept = "tsv", buttonLabel = "Browse"),
-        sliderInput(inputId = "pool", label = strong("choose value for grouping"),
-                    min = 0, max = 100, value = 3),
-        selectInput(inputId = "case", label = strong("Case"),
-                    choices = unique(otu_rel_abund$disease_stat),
-                    selected = "DiarrhealControl"),
-        selectInput(inputId = "plot", label = strong("choose plot output"),
-                    choices = list("bar chart" = "bar","pie chart" = "pie")),
-        selectInput(inputId = "class", label = strong("choose taxonomic level"),
-                    choices = unique(otu_rel_abund$level), selected = "phylum"),
-        radioButtons(inputId = "format", label ="select file type", choices = list("png", "pdf")),
-        downloadButton(outputId = "down", label = "Download")
-    )
-  })
 
   output$plot1 <- renderPlot({
     if(input$plot == "bar"){
@@ -199,15 +142,24 @@ server <- function(input, output) {
 ui <- fluidPage(
   headerPanel('Microbiome'),
   sidebarPanel(
-    uiOutput("moreControls")
+    fileInput("probe1", "Choose metadata .XLSX File", accept = "xlsx", buttonLabel = "Browse"),
+    fileInput("probe2", "Choose otu_counts .TSV File", accept = "tsv", buttonLabel = "Browse"),
+    fileInput("probe3", "Choose taxonomy .TSV File", accept = "tsv", buttonLabel = "Browse"),
+    sliderInput(inputId = "pool", label = strong("choose value for grouping"),
+                min = 0, max = 100, value = 3),
+    selectInput(inputId = "case", label = strong("Case"),
+                choices = "",
+                selected = "DiarrhealControl"),
+    selectInput(inputId = "plot", label = strong("choose plot output"),
+                choices = list("bar chart" = "bar","pie chart" = "pie")),
+    selectInput(inputId = "class", label = strong("choose taxonomic level"),
+                choices = "", selected = "phylum"),
+    radioButtons(inputId = "format", label ="select file type", choices = list("png", "pdf")),
+    downloadButton(outputId = "down", label = "Download")
   ),
   mainPanel(
     plotOutput('plot1'),
   )
 )
-  
-
-
-
 shinyApp(ui = ui, server = server)
 
