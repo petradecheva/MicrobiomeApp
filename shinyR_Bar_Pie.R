@@ -6,7 +6,9 @@ library(readxl)
 library(ggtext)
 library(RColorBrewer)
 library(dplyr)
-
+library(scales)
+library(ggplot2)
+library(gridExtra)
 server <- function(session, input, output) {
     data <- reactive({
       req(input$probe1, input$probe2, input$probe3)
@@ -36,17 +38,16 @@ server <- function(session, input, output) {
                      names_to="level",
                      values_to="taxon") %>%
         mutate(disease_stat = factor(disease_stat,
-                                     levels=c("NonDiarrhealControl",
-                                              "DiarrhealControl",
-                                             "Case")))
+                                     levels=c(unique(metadata$disease_stat))))
     })
+
     observe({
       req(data())
-      updateSelectInput(session, "case", choices = unique(data()$disease_stat))
-      updateSelectInput(session, "class", choices = unique(data()$level))
+      updateSelectInput(session, "case", choices = unique(data()$disease_stat), selected = "DiarrhealControl")
+      updateSelectInput(session, "class", choices = unique(data()$level), selected = "phylum")
     })
    data2 <- reactive({
-      req(input$case,input$pool, input$class)
+      req(input$pool, input$class)
       taxon_rel_abund <- data() %>%
         filter(level==input$class) %>%
         group_by(disease_stat, sample_id, taxon) %>%
@@ -70,41 +71,107 @@ server <- function(session, input, output) {
                   .groups="drop") %>%
         mutate(taxon = factor(taxon),
                taxon = fct_reorder(taxon, mean, .desc=TRUE),
-               taxon = fct_shift(taxon, n=1)) %>%
-        filter(disease_stat == input$case)
+               taxon = fct_shift(taxon, n=1)) 
+        if(input$panel == FALSE){
+          p %>% filter(disease_stat == input$case)
+        }else{
+          p
+        }
   })
   
   myfilename<-reactive(paste("plot-",input$case,"-", input$class,"-", input$plot,".", input$format, sep = ""))
   barchart <- function(){
+    if(input$panel){
+      samples <- unique(data2()$disease_stat)
+      # print(unique(data2()$disease_stat))
+      ptlist <- list()
+      # print(var, "var")
+      for( i in 1:length(samples)) {
+       plist <- filter(data2(), disease_stat == samples[[i]])
+       # print("i")
+       # print(i)
+       # print("plist")
+       # print(plist)
+       # print("data2()")
+       # print(data2())
+        pl <- ggplot(plist, aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
+              geom_col() +
+              scale_y_continuous(expand=c(0, 0)) +
+              labs(x=plist$disease_stat,
+                   y="Mean Relative Abundance (%)",
+                   fill = input$class) +
+              theme_classic() +
+              theme(axis.text.x = element_blank(),
+                    legend.text = element_markdown(),
+                    legend.key.size = unit(10, "pt"))
+            
+         ptlist[[i]] <- pl 
+         # print("ptlist")
+         # print(ptlist)
+      }
+      do.call("grid.arrange", c(ptlist, ncol = length(samples)))  
+    } else{
       ggplot(data2(), aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
       geom_col() +
-      scale_x_discrete(breaks=c("NonDiarrhealControl",
-                                "DiarrhealControl",
-                                "Case"),
-                       labels=c("Healthy",
-                                "Diarrhea,<br>*C. difficile*<br>negative",
-                                "Diarrhea,<br>*C. difficile*<br>positive")) +
       scale_y_continuous(expand=c(0, 0)) +
-      labs(x=NULL,
-           y="Mean Relative Abundance (%)") +
+      # facet_wrap(.~ data2()$disease_stat, scales = "free_x")+
+      labs(x=input$case,
+           y="Mean Relative Abundance (%)",
+           fill = input$class) +
       theme_classic() +
-      theme(axis.text.x = element_markdown(),
+      theme(axis.text.x = element_blank(),
             legend.text = element_markdown(),
             legend.key.size = unit(10, "pt"))
-  }
-  piechart <- function(){
-      ggplot(data2(), aes(x="", y=mean_rel_abund, fill=taxon)) +
-      geom_bar(stat="identity", width=1) +
-      # geom_text(aes(label = round(mean_rel_abund, digits = 0)),
-      #           position = position_stack(vjust = 0.5))+
-      coord_polar("y", start=0) +
-
-      labs(x=NULL,
-           y="Mean Relative Abundance (%)") +
-      theme_classic()
+    }
       
   }
-
+  piechart <- function() {
+    if(input$panel){
+      samples <- unique(data2()$disease_stat)
+      # print(unique(data2()$disease_stat))
+      ptlist <- list()
+      # print(var, "var")
+      for( i in 1:length(samples)) {
+        plist <- filter(data2(), disease_stat == samples[[i]])
+        # print("i")
+        # print(i)
+        # print("plist")
+        # print(plist)
+        # print("data2()")
+        # print(data2())
+        pl <- ggplot(plist, aes(x="", y=mean_rel_abund, fill=taxon)) +
+          geom_bar(stat="identity", width=1) +
+          labs(x=NULL,
+               y=plist$disease_stat,
+               fill = input$class) +
+          coord_polar("y", start=0) +
+          # facet_grid(.~ data2()$disease_stat)+
+          theme_classic() +
+          theme(axis.line = element_blank(),
+                axis.text = element_blank(),
+                axis.ticks = element_blank())
+        
+        ptlist[[i]] <- pl 
+        # print("ptlist")
+        # print(ptlist)
+      }
+      do.call("grid.arrange", c(ptlist, ncol = length(samples)))  
+      
+    } else{
+      ggplot(data2(), aes(x="", y=mean_rel_abund, fill=taxon)) +
+        geom_bar(stat="identity", width=1) +
+        labs(x=NULL,
+             y=input$case,
+             fill = input$class) +
+        coord_polar("y", start=0) +
+        # facet_grid(.~ data2()$disease_stat)+
+        theme_classic() +
+        theme(axis.line = element_blank(),
+              axis.text = element_blank(),
+              axis.ticks = element_blank())
+    }
+    
+  }
   output$plot1 <- renderPlot({
     if(input$plot == "bar"){
       barchart()
@@ -142,23 +209,23 @@ server <- function(session, input, output) {
 ui <- fluidPage(
   headerPanel('Microbiome'),
   sidebarPanel(
-    fileInput("probe1", "Choose metadata .XLSX File", accept = "xlsx", buttonLabel = "Browse"),
-    fileInput("probe2", "Choose otu_counts (subsample.shared) .TSV File", accept = "tsv", buttonLabel = "Browse"),
-    fileInput("probe3", "Choose taxonomy .TSV File", accept = "tsv", buttonLabel = "Browse"),
-    sliderInput(inputId = "pool", label = strong("choose value for grouping"),
+    fileInput("probe1", "Metadata .XLSX File", accept = "xlsx", buttonLabel = "Browse"),
+    fileInput("probe2", "Otu_counts (subsample.shared) .TSV File", accept = "tsv", buttonLabel = "Browse"),
+    fileInput("probe3", "Taxonomy .TSV File", accept = "tsv", buttonLabel = "Browse"),
+    sliderInput(inputId = "pool", label = strong("Treshold"),
                 min = 0, max = 100, value = 3),
-    selectInput(inputId = "case", label = strong("Case"),
-                choices = "",
-                selected = "DiarrhealControl"),
-    selectInput(inputId = "plot", label = strong("choose plot output"),
+    selectInput(inputId = "case", label = strong("Sample"),
+                choices = ""),
+    checkboxInput("panel", strong("Panel view with every sample"), value = F),
+    selectInput(inputId = "plot", label = strong("Plot output"),
                 choices = list("bar chart" = "bar","pie chart" = "pie")),
-    selectInput(inputId = "class", label = strong("choose taxonomic level"),
+    selectInput(inputId = "class", label = strong("Taxonomic level"),
                 choices = "", selected = "phylum"),
-    radioButtons(inputId = "format", label ="select file type", choices = list("png", "pdf")),
+    radioButtons(inputId = "format", label ="File type", choices = list("png", "pdf")),
     downloadButton(outputId = "down", label = "Download")
   ),
   mainPanel(
-    plotOutput('plot1'),
+    plotOutput('plot1')
   )
 )
 shinyApp(ui = ui, server = server)
