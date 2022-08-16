@@ -1,0 +1,14 @@
+name: MicrobiomeRA
+title: MicrobiomeRA
+username:
+account: petradecheva
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6743798
+bundleId: 6171688
+url: https://petradecheva.shinyapps.io/MicrobiomeRA/
+when: 1659707616.78622
+lastSyncTime: 1659707616.78623
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: README.md|Saving Files|shinyR_Bar_Pie.R
