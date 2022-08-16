@@ -46,8 +46,8 @@ server <- function(session, input, output) {
        })
        observe({
          req(data())
-         updateSelectInput(session, "case", choices = unique(data()$disease_stat), selected = "DiarrhealControl")
-         updateSelectInput(session, "class", choices = unique(data()$level), selected = "phylum")
+         updateSelectInput(session, "case", choices = unique(data()$disease_stat))
+         updateSelectInput(session, "class", choices = unique(data()$level))
        })
        data2 <- reactive({
          req(input$pool, input$class)
@@ -91,6 +91,7 @@ server <- function(session, input, output) {
              labs(x=NULL,
                   y="Mean Relative Abundance (%)",
                   fill = input$class) +
+             scale_fill_discrete(labels=paste(data2()$taxon, " ", round(data2()$mean_rel_abund, 1), "%")) +
              theme_classic() +
              theme( strip.background = element_rect (linetype = NULL, color = "white"),
                     strip.text = element_text(size = 10), 
@@ -106,12 +107,16 @@ server <- function(session, input, output) {
                   fill = input$class) +
              coord_polar("y", start=0) +
              facet_grid(.~ data2()$disease_stat)+
+             scale_fill_discrete(labels=paste(data2()$taxon, " ", round(data2()$mean_rel_abund, 1), "%")) +
              theme_classic() +
              theme(strip.background = element_rect (linetype = NULL, color = "white"),
                    strip.text = element_text(size = 10), 
                    axis.line = element_blank(),
                    axis.text = element_blank(),
-                   axis.ticks = element_blank())
+                   axis.ticks = element_blank(), 
+                   legend.text = element_markdown(),
+                   legend.key.size = unit(10, "pt"))
+         
          
          
        }
@@ -151,17 +156,16 @@ server <- function(session, input, output) {
               tabPanel(input$tabname, fluidPage(
                 sidebarLayout(
                     sidebarPanel(
-                          sliderInput(inputId = "pool", label = strong("choose value for grouping"),
+                          sliderInput(inputId = "pool", label = strong("Treshold value"),
                                       min = 0, max = 100, value = 3),
-                          selectInput(inputId = "case", label = strong("Case"),
-                                      choices = "",
-                                      selected = "DiarrhealControl"),
+                          selectInput(inputId = "case", label = strong("Sample"),
+                                      choices = ""),
                           checkboxInput("panel", strong("Panel view with every sample"), value = F),
-                          selectInput(inputId = "plot", label = strong("choose plot output"),
+                          selectInput(inputId = "plot", label = strong("Plot output"),
                                       choices = list("bar chart" = "bar","pie chart" = "pie")),
-                          selectInput(inputId = "class", label = strong("choose taxonomic level"),
-                                      choices = "", selected = "phylum"),
-                          radioButtons(inputId = "format", label ="select file type", choices = list("png", "pdf")),
+                          selectInput(inputId = "class", label = strong("Taxonomic level"),
+                                      choices = ""),
+                          radioButtons(inputId = "format", label ="File type", choices = list("png", "pdf")),
                           downloadButton(outputId = "down", label = "Download")
                     ),
 
