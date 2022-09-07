@@ -21,7 +21,6 @@ ui <- fluidPage(
                 value = "home",
                 sidebarLayout(
                   sidebarPanel(
-                    
                     h3("Generate plots"),
                     fileInput("probe1", "Metadata .XLSX File", accept = "xlsx", buttonLabel = "Browse"),
                     fileInput("probe2", "Otu_counts (subsample.shared) .TSV File", accept = "tsv", buttonLabel = "Browse"),
@@ -117,36 +116,41 @@ server <- function(input, output, session) {
     dff <<- as.data.frame(df)
     data_list[[tid]] <<- dff
     
-    output$plot <- renderPlot({ggplot(data = data_list[[tid]], aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
-        geom_col() +
-        scale_fill_manual(name=NULL,
-                          breaks=c("*Bacteroidetes*", "*Firmicutes*",
-                                   "*Proteobacteria*", "*Verrucomicrobia*",
-                                   "Other"),
-                          values = c(brewer.pal(4, "Dark2"), "gray")) +
-        scale_x_discrete(breaks=c("NonDiarrhealControl",
-                                  "DiarrhealControl",
-                                  "Case"),
-                         labels=c("Healthy",
-                                  "Diarrhea,<br>*C. difficile*<br>negative",
-                                  "Diarrhea,<br>*C. difficile*<br>positive")) +
-        scale_y_continuous(expand=c(0, 0)) +
-        labs(x=NULL,
-             y="Mean Relative Abundance (%)") +
-        theme_classic() +
-        theme(axis.text.x = element_markdown(),
-              legend.text = element_markdown(),
-              legend.key.size = unit(10, "pt"))})
+    #output$plot <- render....
     
-    appendTab(inputId = "tabs", tabPanel(title = shinyInput(rv$counter), value = shinyInput("new_tab", rv$counter), fluidPage(align = "left",
-                                                                                                                                         headerPanel('Microbiome'),
-                                                                                                                                         mainPanel(
-                                                                                                                                           plotOutput("plot")
-                                                                                                                                         ),
+    appendTab(inputId = "tabs", tabPanel(title = input$caption, value = tid, 
+                                                   headerPanel('Microbiome'),
+                                                   mainPanel(
+                                                     renderPlot({ggplot(data = data_list[[tid]], aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
+                                                         geom_col() +
+                                                         scale_fill_manual(name=NULL,
+                                                                           breaks=c("*Bacteroidetes*", "*Firmicutes*",
+                                                                                    "*Proteobacteria*", "*Verrucomicrobia*",
+                                                                                    "Other"),
+                                                                           values = c(brewer.pal(4, "Dark2"), "gray")) +
+                                                         scale_x_discrete(breaks=c("NonDiarrhealControl",
+                                                                                   "DiarrhealControl",
+                                                                                   "Case"),
+                                                                          labels=c("Healthy",
+                                                                                   "Diarrhea,<br>*C. difficile*<br>negative",
+                                                                                   "Diarrhea,<br>*C. difficile*<br>positive")) +
+                                                         scale_y_continuous(expand=c(0, 0)) +
+                                                         labs(x=NULL,
+                                                              y="Mean Relative Abundance (%)") +
+                                                         theme_classic() +
+                                                         theme(axis.text.x = element_markdown(),
+                                                               legend.text = element_markdown(),
+                                                               legend.key.size = unit(10, "pt"))}),
+                                                     selectInput(inputId = shinyInput("case", rv$counter), label = strong("Case"),
+                                                                 choices = "",
+                                                                 selected = "DiarrhealControl")
+                                                   ),
+                                                   
+                                                   actionButton(shinyInput("remove_btn", rv$counter), "Remove", icon = icon("minus-circle"))
                                                                                                                                          
-                                                                                                                                         actionButton(shinyInput("remove_btn", rv$counter), "Remove", icon = icon("minus-circle")),
-                                                                                                                                         
-    )))
+    ))
+    
+    print(data_list[[tid]])
     #print(paste0("This is data_list", data_list))
     # for (i in 1:length(data_list))
     # {
@@ -179,6 +183,7 @@ server <- function(input, output, session) {
     #           legend.key.size = unit(10, "pt"))
     # })
     ##########################
+    print(inputs)
     
   })
   
@@ -192,16 +197,29 @@ server <- function(input, output, session) {
     }
   })
   
-  ## OBSERVERS FOR THE REMOVE BTNS:
+  #Observe for filters
+  # observe({
+  #   if (rv$counter > 0L) {
+  #     lapply(seq(rv$counter), function(x) {
+  #       observeEvent(input[[paste("remove_btn", x, sep = "_")]], {
+  #         updateSelectInput(session, input[[paste("remove_btn", x, sep = "_")]], choices = unique(data_list[[x]]$disease_stat))
+  #       })
+  #     })
+  #   }
+  # })
+  #Observe for rmv buttons
   observe({
     if (rv$counter > 0L) {
       lapply(seq(rv$counter), function(x) {
         observeEvent(input[[paste("remove_btn", x, sep = "_")]], {
+          print(paste0("This is x: ",x))
           removeTab(inputId = "tabs", target = current.tab())
+          print(paste0("Removing: ", input[[paste("remove_btn", x, sep = "_")]]))
         })
       })
     }
   })
+  
   
   output$text <- renderText({paste0("You are viewing tab \"", input$tabs, "\"", " Rv$counter is: ", rv$counter)})
   
