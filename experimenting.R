@@ -12,7 +12,7 @@ library(tools)
 
 tid <<- 0 
 data_list <<- list()
-
+otura_list <<- list()
 ui <- fluidPage(
   textOutput("text"),
   tabsetPanel(id = "tabs",
@@ -21,7 +21,6 @@ ui <- fluidPage(
                 value = "home",
                 sidebarLayout(
                   sidebarPanel(
-                    
                     h3("Generate plots"),
                     fileInput("probe1", "Metadata .XLSX File", accept = "xlsx", buttonLabel = "Browse"),
                     fileInput("probe2", "Otu_counts (subsample.shared) .TSV File", accept = "tsv", buttonLabel = "Browse"),
@@ -85,68 +84,73 @@ server <- function(input, output, session) {
                                    levels=c("NonDiarrhealControl",
                                             "DiarrhealControl",
                                             "Case")))
+    otura_list[[tid]] <<- as.data.frame(otu_rel_abund)
+    #output$plot <- render....
+    taxon_rel_abund <- otura_list[[tid]] %>%
+        #filter(level==input$class) %>%
+        group_by(disease_stat, sample_id, taxon) %>%
+        summarize(rel_abund = sum(rel_abund), .groups="drop") %>%
+        group_by(disease_stat, taxon) %>%
+        summarize(mean_rel_abund = 100*mean(rel_abund), .groups="drop") %>%
+        mutate(taxon = str_replace(taxon,
+                                   "(.*)_unclassified", "Unclassified *\\1*"),
+               taxon = str_replace(taxon,
+                                   "^(\\S*)$", "*\\1*"))
+      taxon_pool <- taxon_rel_abund %>%
+        group_by(taxon) %>%
+        summarize(pool = max(mean_rel_abund) < input$pool,
+                  mean = mean(mean_rel_abund),
+                  .groups="drop")
+      df <- inner_join(taxon_rel_abund, taxon_pool, by="taxon") %>%
+        mutate(taxon = if_else(pool, "Other", taxon)) %>%
+        group_by(disease_stat, taxon) %>%
+        summarize(mean_rel_abund = sum(mean_rel_abund),
+                  mean = min(mean),
+                  .groups="drop") %>%
+        mutate(taxon = factor(taxon),
+               taxon = fct_reorder(taxon, mean, .desc=TRUE),
+               taxon = fct_shift(taxon, n=1))
+      print(c(df))
+      #print(df$taxon)
+      data_list[[tid]] <<- as.data.frame(df)
+
+    appendTab(inputId = "tabs", tabPanel(title = input$caption, value = tid, 
+                                         headerPanel('Microbiome'),
+                                         mainPanel(
+                                           renderText(paste0("This is disease_stat: ", data_list[[tid]]$disease_stat)),
+                                           # renderPlot({ggplot(data = data_list[[tid]], aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
+                                           #     geom_col() +
+                                           #     scale_fill_manual(name=NULL,
+                                           #                       breaks=c("*Bacteroidetes*", "*Firmicutes*",
+                                           #                                "*Proteobacteria*", "*Verrucomicrobia*",
+                                           #                                "Other"),
+                                           #                       values = c(brewer.pal(4, "Dark2"), "gray")) +
+                                           #     scale_x_discrete(breaks=c("NonDiarrhealControl",
+                                           #                               "DiarrhealControl",
+                                           #                               "Case"),
+                                           #                      labels=c("Healthy",
+                                           #                               "Diarrhea,<br>*C. difficile*<br>negative",
+                                           #                               "Diarrhea,<br>*C. difficile*<br>positive")) +
+                                           #     scale_y_continuous(expand=c(0, 0)) +
+                                           #     labs(x=NULL,
+                                           #          y="Mean Relative Abundance (%)") +
+                                           #     theme_classic() +
+                                           #     theme(axis.text.x = element_markdown(),
+                                           #           legend.text = element_markdown(),
+                                           #           legend.key.size = unit(10, "pt"))}),
+                                           selectInput(inputId = "case", label = strong("Case"),
+                                                       choices = unique(data_list[[tid]]$disease_stat))
+                                                       #selected = "DiarrhealControl")
+                                         ),
+                                         
+                                         actionButton(shinyInput("remove_btn", rv$counter), "Remove", icon = icon("minus-circle"))
+                                         
+    ))
     
-    taxon_rel_abund <- otu_rel_abund %>%
-      filter(level=="phylum") %>%
-      group_by(disease_stat, sample_id, taxon) %>%
-      summarize(rel_abund = sum(rel_abund), .groups="drop") %>%
-      group_by(disease_stat, taxon) %>%
-      summarize(mean_rel_abund = 100*mean(rel_abund), .groups="drop") %>%
-      mutate(taxon = str_replace(taxon,
-                                 "(.*)_unclassified", "Unclassified *\\1*"),
-             taxon = str_replace(taxon,
-                                 "^(\\S*)$", "*\\1*"))
+    print(data_list[[tid]]$disease_stat)
     
-    taxon_pool <- taxon_rel_abund %>%
-      group_by(taxon) %>%
-      summarize(pool = max(mean_rel_abund) < 3, 
-                mean = mean(mean_rel_abund),
-                .groups="drop")
     
-    df <- inner_join(taxon_rel_abund, taxon_pool, by="taxon") %>%
-      mutate(taxon = if_else(pool, "Other", taxon)) %>%
-      group_by(disease_stat, taxon) %>%
-      summarize(mean_rel_abund = sum(mean_rel_abund),
-                mean = min(mean),
-                .groups="drop") %>%
-      mutate(taxon = factor(taxon),
-             taxon = fct_reorder(taxon, mean, .desc=TRUE),
-             taxon = fct_shift(taxon, n=1))
-    print(c(df))
-    #print(df$taxon)
-    dff <<- as.data.frame(df)
-    data_list[[tid]] <<- dff
-    
-    output$plot <- renderPlot({ggplot(data = data_list[[tid]], aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
-        geom_col() +
-        scale_fill_manual(name=NULL,
-                          breaks=c("*Bacteroidetes*", "*Firmicutes*",
-                                   "*Proteobacteria*", "*Verrucomicrobia*",
-                                   "Other"),
-                          values = c(brewer.pal(4, "Dark2"), "gray")) +
-        scale_x_discrete(breaks=c("NonDiarrhealControl",
-                                  "DiarrhealControl",
-                                  "Case"),
-                         labels=c("Healthy",
-                                  "Diarrhea,<br>*C. difficile*<br>negative",
-                                  "Diarrhea,<br>*C. difficile*<br>positive")) +
-        scale_y_continuous(expand=c(0, 0)) +
-        labs(x=NULL,
-             y="Mean Relative Abundance (%)") +
-        theme_classic() +
-        theme(axis.text.x = element_markdown(),
-              legend.text = element_markdown(),
-              legend.key.size = unit(10, "pt"))})
-    
-    appendTab(inputId = "tabs", tabPanel(title = shinyInput(rv$counter), value = shinyInput("new_tab", rv$counter), fluidPage(align = "left",
-                                                                                                                              headerPanel('Microbiome'),
-                                                                                                                              mainPanel(
-                                                                                                                                plotOutput("plot")
-                                                                                                                              ),
-                                                                                                                              
-                                                                                                                              actionButton(shinyInput("remove_btn", rv$counter), "Remove", icon = icon("minus-circle")),
-                                                                                                                              
-    )))
+    #print(data_list[[tid]])
     #print(paste0("This is data_list", data_list))
     # for (i in 1:length(data_list))
     # {
@@ -179,6 +183,7 @@ server <- function(input, output, session) {
     #           legend.key.size = unit(10, "pt"))
     # })
     ##########################
+    print(inputs)
     
   })
   
@@ -192,16 +197,60 @@ server <- function(input, output, session) {
     }
   })
   
-  ## OBSERVERS FOR THE REMOVE BTNS:
+  #Observe for filters
+  # observe({
+  #   if (rv$counter > 0L) {
+  #     lapply(seq(rv$counter), function(x) {
+  #       observeEvent(input[[paste("case", x, sep = "_")]], {
+  #         # data2 <- reactive({
+  #         #   taxon_rel_abund <- data() %>%
+  #         #     filter(level==input$class) %>%
+  #         #     group_by(disease_stat, sample_id, taxon) %>%
+  #         #     summarize(rel_abund = sum(rel_abund), .groups="drop") %>%
+  #         #     group_by(disease_stat, taxon) %>%
+  #         #     summarize(mean_rel_abund = 100*mean(rel_abund), .groups="drop") %>%
+  #         #     mutate(taxon = str_replace(taxon,
+  #         #                                "(.*)_unclassified", "Unclassified *\\1*"),
+  #         #            taxon = str_replace(taxon,
+  #         #                                "^(\\S*)$", "*\\1*"))
+  #         #   taxon_pool <- taxon_rel_abund %>%
+  #         #     group_by(taxon) %>%
+  #         #     summarize(pool = max(mean_rel_abund) < input$pool,
+  #         #               mean = mean(mean_rel_abund),
+  #         #               .groups="drop")
+  #         #   #############
+  #         #   df <- inner_join(taxon_rel_abund, taxon_pool, by="taxon") %>%
+  #         #     mutate(taxon = if_else(pool, "Other", taxon)) %>%
+  #         #     group_by(disease_stat, taxon) %>%
+  #         #     summarize(mean_rel_abund = sum(mean_rel_abund),
+  #         #               mean = min(mean),
+  #         #               .groups="drop") %>%
+  #         #     mutate(taxon = factor(taxon),
+  #         #            taxon = fct_reorder(taxon, mean, .desc=TRUE),
+  #         #            taxon = fct_shift(taxon, n=1))
+  #         #   print(c(df))
+  #         #   #print(df$taxon)
+  #         #   dff <<- as.data.frame(df)
+  #         #   data_list[[tid]] <<- dff
+  #         # })
+  #         updateSelectInput(session, input[[paste("case", x, sep = "_")]], choices = unique(data_list[[x]]$disease_stat))
+  #       })
+  #     })
+  #   }
+  # })
+  #Observe for rmv buttons
   observe({
     if (rv$counter > 0L) {
       lapply(seq(rv$counter), function(x) {
         observeEvent(input[[paste("remove_btn", x, sep = "_")]], {
+          print(paste0("This is x: ",x))
           removeTab(inputId = "tabs", target = current.tab())
+          print(paste0("Removing: ", input[[paste("remove_btn", x, sep = "_")]]))
         })
       })
     }
   })
+  
   
   output$text <- renderText({paste0("You are viewing tab \"", input$tabs, "\"", " Rv$counter is: ", rv$counter)})
   
