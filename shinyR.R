@@ -10,6 +10,7 @@ library(bslib)
 library(shinydashboard)
 library(tools)
 library(stringr) 
+library(gridExtra)
 
 
 server <- function(session, input, output) {
@@ -94,7 +95,7 @@ server <- function(session, input, output) {
     observe({
       req(data())
       updateSelectInput(session, "case", choices = unique(data()$disease_stat))
-      updateSelectInput(session, "class", choices = unique(data()$level))
+      updateSelectInput(session, "class", choices = unique(data()$level), selected = "phylum")
     })
     ######################
     data2 <- reactive({
@@ -310,61 +311,70 @@ server <- function(session, input, output) {
                                                                                                   selectInput(inputId = "class", label = strong("choose taxonomic level"),
                                                                                                               choices = "", selected = "phylum"),
                                                                                                   radioButtons(inputId = "format", label ="select file type", choices = list("png", "pdf")),
-                                                                                                  downloadButton(outputId = "down", label = "Download"),
-                                                                                                  actionButton("close", "Close")
+                                                                                                  downloadButton(outputId = "down", label = "Download")
+                                                                                                  # actionButton("close", "Close")
                                                                                                 ),
                                                                                                 mainPanel(
                                                                                                   plotOutput('plot1')
                                                                                                 )
                                                                                               )
-    )))
+    )), select = TRUE)
   })
-  
+  # current.tab <- eventReactive(input$plots, {
+  #   # don't accidentally remove main tab:
+  #   if (!identical(input$plots, "home")) {
+  #     input$plots
+  #   } else {
+  #     NULL
+  #   }
+  # })
+  # 
+  # observeEvent(input$close, {
+  #   removeTab(inputId = "plots", target = current.tab())
+  # })
+      
 }
 
 ui <- 
   fluidPage(
     theme = bs_theme(version = 4, bootswatch = "minty"),
+    align = "center",
   fluidRow(column(12, navbarPage("Microbiome", id = "plots",
                                  tabPanel(
                                    "Home",
                                    value = "home",
-                                   sidebarLayout(
-                                     sidebarPanel (
-                                   h3("Generate plots"),
-                                   textOutput('out_upload'),
-                                   tags$head(tags$style("#out_upload{color: #F3969A;
-                                   font-size: 18px;
-                                   font-weight: bold;
-                                   }"
-                                   )
-                                   ),
-                                   fileInput("probe1", "Metadata .XLSX File", accept = "xlsx", buttonLabel = "Browse"),
-                                   textOutput('out_upload1'),
-                                   tags$head(tags$style("#out_upload1{color: #F3969A;
-                                   font-size: 18px;
-                                   font-weight: bold;
-                                   }"
-                                   )
-                                   ),
-                                   fileInput("probe2", "Otu Table .TSV File", accept = "tsv", buttonLabel = "Browse"),
-                                   textOutput('out_upload2'),
-                                   tags$head(tags$style("#out_upload2{color: #F3969A;
-                                   font-size: 18px;
-                                   font-weight: bold;
-                                   }"
-                                   )
-                                   ),
-                                   fileInput("probe3", "Taxonomy .TSV File", accept = "tsv", buttonLabel = "Browse"),
-                                   textInput("caption", "Name of the plot", "Plot1"),
-                                   verbatimTextOutput("value"),
-                                   actionButton("upload", "Generate")
-                                   ),
+                                   br(),
                                    mainPanel(
-                                     helpText("Description:"),
-                                     helpText("The required tables need to have information about:...")
+                                     h3("Generate plots"),
+                                     textOutput('out_upload'),
+                                     tags$head(tags$style("#out_upload{color: #F3969A;
+                                   font-size: 18px;
+                                   font-weight: bold;
+                                   }"
+                                     )
+                                     ),
+                                     fileInput("probe1", "Metadata .XLSX File", accept = "xlsx", buttonLabel = "Browse"),
+                                     textOutput('out_upload1'),
+                                     tags$head(tags$style("#out_upload1{color: #F3969A;
+                                   font-size: 18px;
+                                   font-weight: bold;
+                                   }"
+                                     )
+                                     ),
+                                     fileInput("probe2", "Otu Table .TSV File", accept = "tsv", buttonLabel = "Browse"),
+                                     textOutput('out_upload2'),
+                                     tags$head(tags$style("#out_upload2{color: #F3969A;
+                                   font-size: 18px;
+                                   font-weight: bold;
+                                   }"
+                                     )
+                                     ),
+                                     fileInput("probe3", "Taxonomy .TSV File", accept = "tsv", buttonLabel = "Browse"),
+                                     textInput("caption", "Name of the plot", "Plot1"),
+                                     verbatimTextOutput("value"),
+                                     actionButton("upload", "Generate")
                                    )
-                                 )
+                                 
                                  )
   )
   )
