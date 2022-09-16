@@ -49,68 +49,69 @@ server <- function(input, output, session) {
   
   observeEvent(input$add, {
     tid <<- tid + 1
+    #p_name <<- p('plot', tid)
     inputs <- reactiveValues(input1 = input$probe1, input2 = input$probe2, input3 = input$probe3)
     print(inputs)
     print(paste0("This is input1: ", inputs$input1))
     #data_list <<- append(data_list,
-      metadata <- read_excel(inputs$input1$datapath, na="NA") %>%
-        select(sample_id, disease_stat) %>%
-        drop_na(disease_stat)
-      
-      otu_counts <- read_tsv(inputs$input2$datapath) %>%
-        select(Group, starts_with("Otu")) %>%
-        rename(sample_id = Group) %>%
-        pivot_longer(-sample_id, names_to="otu", values_to = "count")
-      
-      taxonomy <- read_tsv(inputs$input3$datapath) %>%
-        select("OTU", "Taxonomy") %>%
-        rename_all(tolower) %>%
-        mutate(taxonomy = str_replace_all(taxonomy, "\\(\\d+\\)", ""),
-               taxonomy = str_replace(taxonomy, ";$", "")) %>%
-        separate(taxonomy,
-                 into=c("kingdom", "phylum", "class", "order", "family", "genus"),
-                 sep=";")
-      
-      otu_rel_abund <- inner_join(metadata, otu_counts, by="sample_id") %>%
-        inner_join(., taxonomy, by="otu") %>%
-        group_by(sample_id) %>%
-        mutate(rel_abund = count / sum(count)) %>%
-        ungroup() %>%
-        select(-count) %>%
-        pivot_longer(c("kingdom", "phylum", "class", "order", "family", "genus", "otu"),
-                     names_to="level",
-                     values_to="taxon") %>%
-        mutate(disease_stat = factor(disease_stat,
-                                     levels=c("NonDiarrhealControl",
-                                              "DiarrhealControl",
-                                              "Case")))
-      
-      taxon_rel_abund <- otu_rel_abund %>%
-        filter(level=="phylum") %>%
-        group_by(disease_stat, sample_id, taxon) %>%
-        summarize(rel_abund = sum(rel_abund), .groups="drop") %>%
-        group_by(disease_stat, taxon) %>%
-        summarize(mean_rel_abund = 100*mean(rel_abund), .groups="drop") %>%
-        mutate(taxon = str_replace(taxon,
-                                   "(.*)_unclassified", "Unclassified *\\1*"),
-               taxon = str_replace(taxon,
-                                   "^(\\S*)$", "*\\1*"))
-      
-      taxon_pool <- taxon_rel_abund %>%
-        group_by(taxon) %>%
-        summarize(pool = max(mean_rel_abund) < 3, 
-                  mean = mean(mean_rel_abund),
-                  .groups="drop")
-      
-      df <- inner_join(taxon_rel_abund, taxon_pool, by="taxon") %>%
-        mutate(taxon = if_else(pool, "Other", taxon)) %>%
-        group_by(disease_stat, taxon) %>%
-        summarize(mean_rel_abund = sum(mean_rel_abund),
-                  mean = min(mean),
-                  .groups="drop") %>%
-        mutate(taxon = factor(taxon),
-               taxon = fct_reorder(taxon, mean, .desc=TRUE),
-               taxon = fct_shift(taxon, n=1))
+    metadata <- read_excel(inputs$input1$datapath, na="NA") %>%
+      select(sample_id, disease_stat) %>%
+      drop_na(disease_stat)
+    
+    otu_counts <- read_tsv(inputs$input2$datapath) %>%
+      select(Group, starts_with("Otu")) %>%
+      rename(sample_id = Group) %>%
+      pivot_longer(-sample_id, names_to="otu", values_to = "count")
+    
+    taxonomy <- read_tsv(inputs$input3$datapath) %>%
+      select("OTU", "Taxonomy") %>%
+      rename_all(tolower) %>%
+      mutate(taxonomy = str_replace_all(taxonomy, "\\(\\d+\\)", ""),
+             taxonomy = str_replace(taxonomy, ";$", "")) %>%
+      separate(taxonomy,
+               into=c("kingdom", "phylum", "class", "order", "family", "genus"),
+               sep=";")
+    
+    otu_rel_abund <- inner_join(metadata, otu_counts, by="sample_id") %>%
+      inner_join(., taxonomy, by="otu") %>%
+      group_by(sample_id) %>%
+      mutate(rel_abund = count / sum(count)) %>%
+      ungroup() %>%
+      select(-count) %>%
+      pivot_longer(c("kingdom", "phylum", "class", "order", "family", "genus", "otu"),
+                   names_to="level",
+                   values_to="taxon") %>%
+      mutate(disease_stat = factor(disease_stat,
+                                   levels=c("NonDiarrhealControl",
+                                            "DiarrhealControl",
+                                            "Case")))
+    
+    taxon_rel_abund <- otu_rel_abund %>%
+      filter(level=="phylum") %>%
+      group_by(disease_stat, sample_id, taxon) %>%
+      summarize(rel_abund = sum(rel_abund), .groups="drop") %>%
+      group_by(disease_stat, taxon) %>%
+      summarize(mean_rel_abund = 100*mean(rel_abund), .groups="drop") %>%
+      mutate(taxon = str_replace(taxon,
+                                 "(.*)_unclassified", "Unclassified *\\1*"),
+             taxon = str_replace(taxon,
+                                 "^(\\S*)$", "*\\1*"))
+    
+    taxon_pool <- taxon_rel_abund %>%
+      group_by(taxon) %>%
+      summarize(pool = max(mean_rel_abund) < 3, 
+                mean = mean(mean_rel_abund),
+                .groups="drop")
+    
+    df <- inner_join(taxon_rel_abund, taxon_pool, by="taxon") %>%
+      mutate(taxon = if_else(pool, "Other", taxon)) %>%
+      group_by(disease_stat, taxon) %>%
+      summarize(mean_rel_abund = sum(mean_rel_abund),
+                mean = min(mean),
+                .groups="drop") %>%
+      mutate(taxon = factor(taxon),
+             taxon = fct_reorder(taxon, mean, .desc=TRUE),
+             taxon = fct_shift(taxon, n=1))
     print(c(df))
     #print(df$taxon)
     dff <<- as.data.frame(df)
@@ -118,7 +119,7 @@ server <- function(input, output, session) {
     
     # pl_list[[tid]] <<- ggplot(data_list[[tid]], aes(x="", y=mean_rel_abund, fill=taxon)) +
     #   geom_bar(stat="identity", width=1) +
-    #   # facet_grid(.~ data2()$disease_stat)+
+    #   # facet_grid(.~ data2()$disease_stat)+F
     #   theme_classic() +
     #   theme(axis.line = element_blank(),
     #         axis.text = element_blank(),
@@ -128,17 +129,18 @@ server <- function(input, output, session) {
     #output$plot <- render....
     
     appendTab(inputId = "tabs", tabPanel(title = input$caption, value = tid, 
-                                                   headerPanel('Microbiome'),
-                                                   mainPanel(
-                                                     renderPlot({pl_list[[tid]]}),
-                                                     selectInput(inputId = shinyInput("case", rv$counter), label = strong("Case"),
-                                                                 choices = unique(data_list[[tid]]$disease_stat),
-                                                                 selected = "DiarrhealControl")
-                                                   ),
-                                                   
-                                                   actionButton(shinyInput("remove_btn", rv$counter), "Remove", icon = icon("minus-circle"))
-                                                                                                                                         
-    ))
+                                         headerPanel('Microbiome'),
+                                         mainPanel(
+                                           plotOutput(''),
+                                           selectInput(inputId = shinyInput("case", rv$counter), label = strong("Case"),
+                                                       choices = unique(data_list[[tid]]$disease_stat),
+                                                       selected = "DiarrhealControl")
+                                         ),
+                                         
+                                         actionButton(shinyInput("remove_btn", rv$counter), "Remove", icon = icon("minus-circle"))
+                                         
+    )) 
+    
     
     print(paste("After append", data_list[[tid]]$disease_stat))
     ##########################
@@ -156,39 +158,37 @@ server <- function(input, output, session) {
     }
   })
   
-
-  
-observe({
-      if (rv$counter > 0L) {
-        lapply(seq(rv$counter), function(x) {
-          observeEvent(input[[paste("case", x, sep = "_")]], {
-            dfg <- filter(data_list[[tid]], disease_stat == input[[paste("case", x, sep = "_")]])
-            print(paste("this is dfg disease_stat:", dfg$disease_stat))
-            v2 <- rainbow(length(dfg$taxon))
-            names(v2) <- unique(dfg$taxon)
-            print(length(names(v2)))
-            print(paste(dfg$taxon, " ", round(dfg$mean_rel_abund, 1),"%"))
-            if (length(names(v2)) == 1)
-            {
-              # v2["Other"] = "#FFFFFF"
-            }
-            else
-            {
-              v2["Other"] = "#808080"
-            }
-            pl_list[[x]] <<- ggplot(dfg, aes(x="", y=mean_rel_abund, fill=taxon)) +
-              geom_bar(stat="identity", width=1) +
-              scale_fill_manual(values = v2, labels=paste(gsub('\\*', '', dfg$taxon), str_replace_all(paste(round(dfg$mean_rel_abund, 1),"%"), " ", "")))+
-              # facet_grid(.~ data2()$disease_stat)+
-              theme_classic() +
-              theme(axis.line = element_blank(),
-                    axis.text = element_blank(),
-                    axis.ticks = element_blank())
-            renderPlot(pl_list[[x]])
-          })
+  observe({
+    if (rv$counter > 0L) {
+      lapply(seq(rv$counter), function(x) {
+        observeEvent(input[[paste("case", x, sep = "_")]], {
+          dfg <- filter(data_list[[tid]], disease_stat == input[[paste("case", x, sep = "_")]])
+          print(paste("this is dfg disease_stat:", dfg$disease_stat))
+          v2 <- rainbow(length(dfg$taxon))
+          names(v2) <- unique(dfg$taxon)
+          print(length(names(v2)))
+          print(paste(dfg$taxon, " ", round(dfg$mean_rel_abund, 1),"%"))
+          if (length(names(v2)) == 1)
+          {
+            # v2["Other"] = "#FFFFFF"
+          }
+          else
+          {
+            v2["Other"] = "#808080"
+          }
+          pl_list[[x]] <<- ggplot(dfg, aes(x="", y=mean_rel_abund, fill=taxon)) +
+            geom_bar(stat="identity", width=1) +
+            scale_fill_manual(values = v2, labels=paste(gsub('\\*', '', dfg$taxon), str_replace_all(paste(round(dfg$mean_rel_abund, 1),"%"), " ", "")))+
+            # facet_grid(.~ data2()$disease_stat)+
+            theme_classic() +
+            theme(axis.line = element_blank(),
+                  axis.text = element_blank(),
+                  axis.ticks = element_blank())
+          output$output_pl <- renderPlot(pl_list[[x]])
         })
-      }
-})
+      })
+    }
+  })
   
   observe({
     if (rv$counter > 0L) {
