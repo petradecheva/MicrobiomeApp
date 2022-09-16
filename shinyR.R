@@ -13,7 +13,7 @@ library(stringr)
 
 
 server <- function(session, input, output) {
-  output$out_upload <- renderTable({
+  output$out_upload <- renderText({
     
     #assign uploaded file to a variable
     File <- input$probe1       
@@ -27,7 +27,7 @@ server <- function(session, input, output) {
         'xlsx'
       ), "Wrong File Format try again!"))
   })
-  output$out_upload1 <- renderTable({
+  output$out_upload1 <- renderText({
     
     #assign uploaded file to a variable
     File <- input$probe2       
@@ -41,7 +41,7 @@ server <- function(session, input, output) {
         'tsv'
       ), "Wrong File Format try again!"))
   })
-  output$out_upload2 <- renderTable({
+  output$out_upload2 <- renderText({
     
     #assign uploaded file to a variable
     File <- input$probe3       
@@ -55,6 +55,7 @@ server <- function(session, input, output) {
         'tsv'
       ), "Wrong File Format try again!"))
   })
+  
   observeEvent(input$upload, {
     ###################
     data <- reactive({
@@ -158,7 +159,7 @@ server <- function(session, input, output) {
             theme_classic() +
             theme(axis.text.x = element_blank(),
                   legend.text = element_markdown(),
-                  legend.key.size = unit(10, "pt")) 
+                  legend.key.size = unit(18, "pt")) 
           
           ptlist[[i]] <- pl 
         }
@@ -185,7 +186,7 @@ server <- function(session, input, output) {
           theme_classic() +
           theme(axis.text.x = element_blank(),
                 legend.text = element_markdown(),
-                legend.key.size = unit(10, "pt")) +
+                legend.key.size = unit(18, "pt")) +
           scale_fill_manual(values = v2, labels=paste(gsub('\\*', '', data2()$taxon), str_replace_all(paste(round(data2()$mean_rel_abund, 1),"%"), " ", "")))
       }
       
@@ -219,8 +220,9 @@ server <- function(session, input, output) {
                   axis.text = element_blank(),
                   axis.ticks = element_blank(),
                   legend.text = element_markdown(),
-                  legend.key.size = unit(10, "pt")) 
-          
+                  legend.key.size = unit(18, "pt"))
+
+          # renderBillboarder({billboarder() %>% bb_piechart(plist) %>% bb_legend(position = 'right')})
           
           
           ptlist[[i]] <- pl
@@ -251,7 +253,10 @@ server <- function(session, input, output) {
           theme_classic() +
           theme(axis.line = element_blank(),
                 axis.text = element_blank(),
-                axis.ticks = element_blank()) 
+                axis.ticks = element_blank(),
+                legend.text = element_markdown(),
+                legend.key.size = unit(18, "pt"))
+         # renderBillboarder({billboarder() %>% bb_piechart(data2()) %>% bb_legend(position = 'right')})
         
       }
       
@@ -260,11 +265,11 @@ server <- function(session, input, output) {
     output$plot1 <- renderPlot({
       if(input$plot == "bar"){
         barchart()
-        
+
       }
       else if(input$plot == "pie") {
         piechart()
-        
+
       }
     })
     output$down <- downloadHandler(
@@ -314,55 +319,55 @@ server <- function(session, input, output) {
                                                                                               )
     )))
   })
-  observeEvent(input$remove,{
-    removeUI(
-      selector = "ul>li:nth-child(n+2)",
-      multiple = TRUE
-    )
-    removeUI(
-      selector = "div.box-body",
-      multiple = TRUE
-    )
-    updateTabsetPanel(session, "plots",
-                      selected = "Home")
-  })
-  observeEvent(input$close, {
-    print("closing")
-    print(input$plots)
-    removeTab(inputId = "plots", target = input$plots)
-    updateTabsetPanel(session, "plots",
-                      selected = "home")
-    
-  })
-  output$text <- renderText({paste0("You are viewing tab \"", input$plots, "\"")})
+  
 }
 
-ui <- fluidPage(
-  theme = bs_theme(version = 4, bootswatch = "minty"),
-  align = "center",
-  dashboardSidebar(
-    actionLink("remove", "Remove detail tabs"),
-    textOutput("text")),
+ui <- 
+  fluidPage(
+    theme = bs_theme(version = 4, bootswatch = "minty"),
   fluidRow(column(12, navbarPage("Microbiome", id = "plots",
                                  tabPanel(
                                    "Home",
                                    value = "home",
-                                   br(),
+                                   sidebarLayout(
+                                     sidebarPanel (
                                    h3("Generate plots"),
-                                   tableOutput('out_upload'),
+                                   textOutput('out_upload'),
+                                   tags$head(tags$style("#out_upload{color: #F3969A;
+                                   font-size: 18px;
+                                   font-weight: bold;
+                                   }"
+                                   )
+                                   ),
                                    fileInput("probe1", "Metadata .XLSX File", accept = "xlsx", buttonLabel = "Browse"),
-                                   tableOutput('out_upload1'),
-                                   fileInput("probe2", "Otu_counts (subsample.shared) .TSV File", accept = "tsv", buttonLabel = "Browse"),
-                                   tableOutput('out_upload2'),
+                                   textOutput('out_upload1'),
+                                   tags$head(tags$style("#out_upload1{color: #F3969A;
+                                   font-size: 18px;
+                                   font-weight: bold;
+                                   }"
+                                   )
+                                   ),
+                                   fileInput("probe2", "Otu Table .TSV File", accept = "tsv", buttonLabel = "Browse"),
+                                   textOutput('out_upload2'),
+                                   tags$head(tags$style("#out_upload2{color: #F3969A;
+                                   font-size: 18px;
+                                   font-weight: bold;
+                                   }"
+                                   )
+                                   ),
                                    fileInput("probe3", "Taxonomy .TSV File", accept = "tsv", buttonLabel = "Browse"),
-                                   textInput("caption", "Name of the plot", "Example: plot1"),
+                                   textInput("caption", "Name of the plot", "Plot1"),
                                    verbatimTextOutput("value"),
-                                   actionButton("upload", "Generate"),
-                                   fluidRow(column (12, sidebarPanel(
+                                   actionButton("upload", "Generate")
+                                   ),
+                                   mainPanel(
                                      helpText("Description:"),
-                                     helpText("The required tables need to have information about:...")), style = "padding-top:50px"))
-                                 ))
+                                     helpText("The required tables need to have information about:...")
+                                   )
+                                 )
+                                 )
   )
   )
+)
 )
 shinyApp(ui = ui, server = server)
