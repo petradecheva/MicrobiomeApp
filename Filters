@@ -13,6 +13,7 @@ library(tools)
 tid <<- 0 
 data_list <<- list()
 pl_list <<- list()
+tra_list <<- list()
 ui <- fluidPage(
   theme = bs_theme(version = 4, bootswatch = "minty"),
   textOutput("text"),
@@ -119,6 +120,7 @@ server <- function(input, output, session) {
     #print(df$taxon)
     dff <<- as.data.frame(df)
     data_list[[tid]] <<- dff
+    tra_list[[tid]] <<- as.data.frame(taxon_rel_abund)
     
     #creating plot
     pl_list[[tid]] <- ggplot(data_list[[tid]], aes(x="", y=mean_rel_abund, fill=taxon)) +
@@ -139,9 +141,10 @@ server <- function(input, output, session) {
                                            plotOutput(paste("pl_list", tid, sep = "_")),
                                            selectInput(inputId = shinyInput("case", rv$counter), label = strong("Case"),
                                                        choices = unique(data_list[[tid]]$disease_stat),
-                                                       selected = "DiarrhealControl")
+                                                       selected = "DiarrhealControl"),
+                                           sliderInput(inputId = shinyInput("pool", rv$counter), label = strong("choose value for grouping"),
+                                                      min = 0, max = 100, value = 3)
                                          ),
-                                         
                                          actionButton(shinyInput("remove_btn", rv$counter), "Remove", icon = icon("minus-circle"))
                                          
     ))
@@ -168,9 +171,23 @@ server <- function(input, output, session) {
   observe({
     if (rv$counter > 0L) {
       lapply(seq(rv$counter), function(x) {
-        observeEvent(input[[paste("case", x, sep = "_")]], {
+        observeEvent(input[[paste("case", x, sep = "_")]],{
           #filtering data based on the selected choice
-          dfg <- filter(data_list[[x]], disease_stat == input[[paste("case", x, sep = "_")]])
+          taxon_pool <- tra_list[[x]] %>%
+            group_by(taxon) %>%
+            summarize(pool = max(mean_rel_abund) < input[[paste("pool", x, sep = "_")]], 
+                      mean = mean(mean_rel_abund),
+                      .groups="drop")
+          dfg <- inner_join(tra_list[[x]], taxon_pool, by="taxon") %>%
+            mutate(taxon = if_else(pool, "Other", taxon)) %>%
+            group_by(disease_stat, taxon) %>%
+            summarize(mean_rel_abund = sum(mean_rel_abund),
+                      mean = min(mean),
+                      .groups="drop") %>%
+            mutate(taxon = factor(taxon),
+                   taxon = fct_reorder(taxon, mean, .desc=TRUE),
+                   taxon = fct_shift(taxon, n=1)) %>%
+            filter(disease_stat == input[[paste("case", x, sep = "_")]])
           #print(paste("this is dfg disease_stat:", dfg$disease_stat))
           v2 <- rainbow(length(dfg$taxon))
           names(v2) <- unique(dfg$taxon)
@@ -187,14 +204,61 @@ server <- function(input, output, session) {
           }
           #print(pl_list[[x]])
           #overwriting the first created plot on the tab with the newly created one based on the new data
-          pl_list[[x]] <<- ggplot(dfg, aes(x="", y=mean_rel_abund, fill=taxon)) +
-              geom_bar(stat="identity", width=1) +
-              scale_fill_manual(values = v2, labels=paste(gsub('\\*', '', dfg$taxon), str_replace_all(paste(round(dfg$mean_rel_abund, 1),"%"), " ", "")))+
-              # facet_grid(.~ data2()$disease_stat)+
-              theme_classic() +
-              theme(axis.line = element_blank(),
-                    axis.text = element_blank(),
-                    axis.ticks = element_blank())
+          pl_list[[x]] <<- ggplot(dfg, aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
+            geom_bar(stat="identity", width=1) +
+            scale_fill_manual(values = v2, labels=paste(gsub('\\*', '', dfg$taxon), str_replace_all(paste(round(dfg$mean_rel_abund, 1),"%"), " ", "")))+
+            # facet_grid(.~ data2()$disease_stat)+
+            theme_classic() +
+            theme(axis.line = element_blank(),
+                  axis.text = element_blank(),
+                  axis.ticks = element_blank())
+          #renderPlot(pl_list[[x]])
+          #print(pl_list[[x]])
+          output[[paste("pl_list", x, sep = "_")]] <- renderPlot({ pl_list[[x]] })
+          
+          
+        })
+        observeEvent(input[[paste("pool", x, sep = "_")]],{
+          #filtering data based on the selected choice
+          taxon_pool <- tra_list[[x]] %>%
+            group_by(taxon) %>%
+            summarize(pool = max(mean_rel_abund) < input[[paste("pool", x, sep = "_")]], 
+                      mean = mean(mean_rel_abund),
+                      .groups="drop")
+          dfg <- inner_join(tra_list[[x]], taxon_pool, by="taxon") %>%
+            mutate(taxon = if_else(pool, "Other", taxon)) %>%
+            group_by(disease_stat, taxon) %>%
+            summarize(mean_rel_abund = sum(mean_rel_abund),
+                      mean = min(mean),
+                      .groups="drop") %>%
+            mutate(taxon = factor(taxon),
+                   taxon = fct_reorder(taxon, mean, .desc=TRUE),
+                   taxon = fct_shift(taxon, n=1)) %>%
+            filter(disease_stat == input[[paste("case", x, sep = "_")]])
+          #print(paste("this is dfg disease_stat:", dfg$disease_stat))
+          v2 <- rainbow(length(dfg$taxon))
+          names(v2) <- unique(dfg$taxon)
+          #print(length(names(v2)))
+          #print(paste(dfg$taxon, " ", round(dfg$mean_rel_abund, 1),"%"))
+          if (length(names(v2)) == 1)
+          {
+            # v2["Other"] = "#FFFFFF"
+          }
+          else
+          {
+            v2["Other"] = "#808080"
+            
+          }
+          #print(pl_list[[x]])
+          #overwriting the first created plot on the tab with the newly created one based on the new data
+          pl_list[[x]] <<- ggplot(dfg, aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
+            geom_bar(stat="identity", width=1) +
+            scale_fill_manual(values = v2, labels=paste(gsub('\\*', '', dfg$taxon), str_replace_all(paste(round(dfg$mean_rel_abund, 1),"%"), " ", "")))+
+            # facet_grid(.~ data2()$disease_stat)+
+            theme_classic() +
+            theme(axis.line = element_blank(),
+                  axis.text = element_blank(),
+                  axis.ticks = element_blank())
           #renderPlot(pl_list[[x]])
           #print(pl_list[[x]])
           output[[paste("pl_list", x, sep = "_")]] <- renderPlot({ pl_list[[x]] })
