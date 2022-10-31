@@ -9,6 +9,13 @@ library(dplyr)
 library(bslib)
 library(shinydashboard)
 library(tools)
+library(gridExtra)
+library(cowplot)
+
+
+memory.limit(size=10240)
+options(shiny.host = '192.168.0.121')
+options(shiny.port = 8080)
 
 tid <<- 0 
 data_list <<- list()
@@ -21,7 +28,7 @@ ui <- fluidPage(
                                          title = "Home",
                                          value = "home",
                                          HTML(r"(<div class="row">
-                                              <div class="col-sm-5" role="main">
+                                              <div class="col-sm-3" role="main">
                                               <h3>Generate plots</h3>
                                               <div class="form-group shiny-input-container">
                                               <label class="control-label" id="probe1-label" for="probe1">Metadata .XLSX File</label>
@@ -78,17 +85,58 @@ ui <- fluidPage(
                                               Add
                                               </button>
                                               </div>
-                                              <div class="col-sm-4">
+                                              <div class="col-sm-3">
+                                              
+                                              <br><br>
                                               <br>
                                               <form class="well" role="complementary">
                                               <div class="row">
                                               <div class="col-sm-12">
                                               <span class="help-block">Read me:</span>
                                               </div>
+                                              </div> <br>
+                                              
+                                              <div class="row">
+                                              <div class="col-sm-12">
+                                              <span class="help-block">Each file/table needs to have the specified columns:
+                                              </span>
+                                              </div>
+                                              </div><div class="row">
+                                              <div class="col-sm-12">
+                                              <span class="help-block">
+                                              Metadata table (from metadata file)- sample_id, disease_stat
+                                              </span>
+                                              </div>
                                               </div>
                                               <div class="row">
                                               <div class="col-sm-12">
-                                              <span class="help-block">The required tables need to have information about:...</span>
+                                              <span class="help-block">
+                                              Otu_Counts table (from subsample.shared file) - Group and columns that start with Otu
+                                              </span>
+                                              </div>
+                                              </div><div class="row">
+                                              <div class="col-sm-12">
+                                              <span class="help-block">
+                                              Taxonomy  (from cons.taxonomy file) - OTU, Taxonomy
+                                              </span>
+                                              </div>
+                                              </div>
+                                              <br><div class="row">
+                                              <div class="col-sm-12">
+                                              <span class="help-block">
+                                              
+                                              You can use these files as reference: </span>
+                                              
+                                              <button id="exmp1" type="default" class="btn btn-default action-button btn-sm">
+                                              metadata
+                                              </button>
+                                              
+                                              <button id="exmp2" type="default" class="btn btn-default action-button btn-sm">
+                                              otu_counts
+                                              </button>
+                                              <button id="exmp3" type="default" class="btn btn-default action-button btn-sm">
+                                              taxonomy
+                                              </button>                                        
                                               </div>
                                               </div>
                                               </form>
@@ -185,7 +233,7 @@ server <- function(input, output, session) {
     #creating plot
     pl_list[[tid]] <- ggplot(data_list[[tid]], aes(x="", y=mean_rel_abund, fill=taxon)) +
       geom_bar(stat="identity", width=1) +
-      # facet_grid(.~ data2()$disease_stat)+
+      # facet_grid(.~ dfg$disease_stat)+
       theme_classic() +
       theme(axis.line = element_blank(),
             axis.text = element_blank(),
@@ -198,13 +246,18 @@ server <- function(input, output, session) {
     appendTab(inputId = "tabs", tabPanel(title = input$caption, value = tid, 
                                          headerPanel('Microbiome'),
                                          sidebarLayout(
-                                           sidebarPanel(selectInput(inputId = shinyInput("case", rv$counter), label = strong("Case"),
+                                           sidebarPanel(selectInput(inputId = shinyInput("case", rv$counter), label = strong("Sample"),
                                                                     choices = unique(data_list[[tid]]$disease_stat),
                                                                     selected = "DiarrhealControl"),
-                                                        sliderInput(inputId = shinyInput("pool", rv$counter), label = strong("choose value for grouping"),
+                                                        sliderInput(inputId = shinyInput("pool", rv$counter), label = strong("Treshold"),
                                                                     min = 0, max = 100, value = 3),
-                                                        selectInput(inputId = shinyInput("class", rv$counter), label = strong("choose taxonomic level"),
+                                                        checkboxInput(inputId = shinyInput("panel", rv$counter), strong("Panel view with every sample"), value = F),
+                                                        selectInput(inputId = shinyInput("plot", rv$counter), label = strong("Plot output"),
+                                                                    choices = list("bar chart" = "bar","pie chart" = "pie")),
+                                                        selectInput(inputId = shinyInput("class", rv$counter), label = strong("Taxonomic level"),
                                                                     choices = unique(ora_list[[tid]]$level), selected = "phylum"),
+                                                        # radioButtons(inputId = shinyInput("format", rv$counter), label ="select file type", choices = list("png", "pdf")),
+                                                        # downloadButton(outputId = "down", label = "Download")
                                                         actionButton(shinyInput("remove_btn", rv$counter), "Remove", icon = icon("minus-circle"))),
                                            mainPanel(
                                              plotOutput(paste("pl_list", tid, sep = "_")),
@@ -212,7 +265,8 @@ server <- function(input, output, session) {
                                            )
                                          )
                                          
-    ))
+    ), select = TRUE)
+    
     
     #print(pl_list[[tid]])
     #print(paste("After append", data_list[[tid]]$disease_stat))
@@ -257,13 +311,23 @@ server <- function(input, output, session) {
                 .groups="drop") %>%
       mutate(taxon = factor(taxon),
              taxon = fct_reorder(taxon, mean, .desc=TRUE),
-             taxon = fct_shift(taxon, n=1)) %>%
-      filter(disease_stat == input[[paste("case", x, sep = "_")]])
+             taxon = fct_shift(taxon, n=1))
+    if(input[[paste("panel", x, sep = "_")]]==TRUE){
+      dfg
+      print("panel")
+      print(paste("disease stat:", dfg$disease_stat))
+    }else {
+      dfg <- dfg %>% filter(disease_stat == input[[paste("case", x, sep = "_")]])
+      print("not panel")
+      print(paste("disease_stat:", dfg$disease_stat))
+      
+    }
+    # filter(disease_stat == input[[paste("case", x, sep = "_")]])
     #print(paste("this is dfg disease_stat:", dfg$disease_stat))
     v2 <- rainbow(length(dfg$taxon))
     names(v2) <- unique(dfg$taxon)
-    #print(length(names(v2)))
-    #print(paste(dfg$taxon, " ", round(dfg$mean_rel_abund, 1),"%"))
+    print(length(names(v2)))
+    print(paste(dfg$taxon, " ", round(dfg$mean_rel_abund, 1),"%"))
     if (length(names(v2)) == 1)
     {
       # v2["Other"] = "#FFFFFF"
@@ -275,16 +339,154 @@ server <- function(input, output, session) {
     }
     #print(pl_list[[x]])
     #overwriting the first created plot on the tab with the newly created one based on the new data
-    pl_list[[x]] <<- ggplot(dfg, aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
-      geom_bar(stat="identity", width=1) +
-      scale_fill_manual(values = v2, labels=paste(gsub('\\*', '', dfg$taxon), str_replace_all(paste(round(dfg$mean_rel_abund, 1),"%"), " ", "")))+
-      # facet_grid(.~ data2()$disease_stat)+
-      theme_classic() +
-      theme(axis.line = element_blank(),
-            axis.text = element_blank(),
-            axis.ticks = element_blank())
-    #renderPlot(pl_list[[x]])
-    #print(pl_list[[x]])
+    barchart <- function(){
+      
+      if(input[[paste("panel", x, sep = "_")]]){
+        samples <- unique(dfg$disease_stat)
+        ptlist <- list()
+        for( i in 1:length(samples)) {
+          plist <- filter(dfg, disease_stat == samples[[i]])
+          v2 <- rainbow(length(plist$taxon))
+          names(v2) <- unique(plist$taxon)
+          print(length(names(v2)))
+          if (length(names(v2)) == 1)
+          {
+            v2["Other"] = "#FFFFFF"
+          }
+          else
+          {
+            v2["Other"] = "#808080"
+          }
+          pl <- ggplot(plist, aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
+            geom_col() +
+            scale_y_continuous(expand=c(0, 0)) +
+            labs(x=plist$disease_stat,
+                 y="Mean Relative Abundance (%)",
+                 fill = input[[paste("class", x, sep = "_")]]) +
+            scale_fill_manual(values = v2, labels=paste(gsub('\\*', '', plist$taxon), str_replace_all(paste(round(plist$mean_rel_abund, 1),"%"), " ", "")))+
+            theme_classic() +
+            theme(axis.text.x = element_blank(),
+                  legend.text = element_markdown(),
+                  legend.key.size = unit(18, "pt")) 
+          
+          ptlist[[i]] <- pl 
+        }
+        # plot_grid(ptlist, ncol = 2)
+        # do.call("grid.arrange", c(ptlist, ncol = 2))  
+        do.call("plot_grid", c(ptlist, ncol = 2))
+        # grid.arrange(plist, ncol=2)
+        # plist + plot_layout(ncol = 2)
+        
+      } else{
+        v2 <- rainbow(length(dfg$taxon))
+        names(v2) <- unique(dfg$taxon)
+        print(length(names(v2)))
+        print(paste(dfg$taxon, " ", round(dfg$mean_rel_abund, 1),"%"))
+        if (length(names(v2)) == 1)
+        {
+          v2["Other"] = "#FFFFFF"
+        }
+        else
+        {
+          v2["Other"] = "#808080"
+        }
+        ggplot(dfg, aes(x=disease_stat, y=mean_rel_abund, fill=taxon)) +
+          geom_col() +
+          scale_y_continuous(expand=c(0, 0)) +
+          labs(x=input$case,
+               y="Mean Relative Abundance (%)",
+               fill = input$class) +
+          theme_classic() +
+          theme(axis.text.x = element_blank(),
+                legend.text = element_markdown(),
+                legend.key.size = unit(18, "pt")) +
+          scale_fill_manual(values = v2, labels=paste(gsub('\\*', '', dfg$taxon), str_replace_all(paste(round(dfg$mean_rel_abund, 1),"%"), " ", "")))
+      }
+      
+    }
+    piechart <- function() {
+      if(input[[paste("panel", x, sep = "_")]]){
+        samples <- unique(dfg$disease_stat)
+        ptlist <- list()
+        for( i in 1:length(samples)) {
+          plist <- filter(dfg, disease_stat == samples[[i]])
+          v2 <- rainbow(length(plist$taxon))
+          names(v2) <- unique(plist$taxon)
+          print(length(names(v2)))
+          if (length(names(v2)) == 1)
+          {
+            v2["Other"] = "#FFFFFF"
+          }
+          else
+          {
+            v2["Other"] = "#808080"
+          }
+          pl <- ggplot(plist, aes(x="", y=mean_rel_abund, fill=taxon)) +
+            geom_bar(stat="identity", width=1) +
+            labs(x=NULL,
+                 y=plist$disease_stat,
+                 fill = input[[paste("class", x, sep = "_")]]) +
+            coord_polar("y", start=0) +
+            scale_fill_manual(values = v2, labels=paste(gsub('\\*', '', plist$taxon), str_replace_all(paste(round(plist$mean_rel_abund, 1),"%"), " ", "")))+
+            theme_classic() +
+            theme(axis.line = element_blank(),
+                  axis.text = element_blank(),
+                  axis.ticks = element_blank(),
+                  legend.text = element_markdown(),
+                  legend.key.size = unit(18, "pt"))
+          
+          # renderBillboarder({billboarder() %>% bb_piechart(plist) %>% bb_legend(position = 'right')})
+          
+          
+          ptlist[[i]] <- pl
+        }
+        do.call("plot_grid", c(ptlist, ncol = 2))
+        
+      } else{
+        v2 <- rainbow(length(dfg$taxon))
+        names(v2) <- unique(dfg$taxon)
+        print(length(names(v2)))
+        print(paste(dfg$taxon, " ", round(dfg$mean_rel_abund, 1),"%"))
+        if (length(names(v2)) == 1)
+        {
+          # v2["Other"] = "#FFFFFF"
+        }
+        else
+        {
+          v2["Other"] = "#808080"
+        }
+        ggplot(dfg, aes(x="", y=mean_rel_abund, fill=taxon)) +
+          geom_bar(stat="identity", width=1) +
+          labs(x=NULL,
+               y=input[[paste("case", x, sep = "_")]],
+               fill = input[[paste("class", x, sep="_")]]) +
+          coord_polar("y", start=0) +
+          scale_fill_manual(values = v2, labels=paste(gsub('\\*', '', dfg$taxon), str_replace_all(paste(round(dfg$mean_rel_abund, 1),"%"), " ", "")))+
+          # facet_grid(.~ data2()$disease_stat)+
+          theme_classic() +
+          theme(axis.line = element_blank(),
+                axis.text = element_blank(),
+                axis.ticks = element_blank(),
+                legend.text = element_markdown(),
+                legend.key.size = unit(18, "pt"))
+        # renderBillboarder({billboarder() %>% bb_piechart(data2()) %>% bb_legend(position = 'right')})
+        
+      }
+      
+    }
+    
+    
+    pl_list[[x]] <<- 
+      if(input[[paste("plot", x, sep = "_")]] == "bar"){
+        barchart()
+        
+      }
+    else if(input[[paste("plot", x, sep = "_")]] == "pie") {
+      piechart()
+      
+    }
+    
+    
     output[[paste("pl_list", x, sep = "_")]] <- renderPlot({ pl_list[[x]] })
   }
   
@@ -293,6 +495,12 @@ server <- function(input, output, session) {
     if (rv$counter > 0L) {
       lapply(seq(rv$counter), function(x) {
         observeEvent(input[[paste("case", x, sep = "_")]],{
+          customRender(x)
+        })
+        observeEvent(input[[paste("plot", x, sep = "_")]],{
+          customRender(x)
+        })
+        observeEvent(input[[paste("panel", x, sep = "_")]],{
           customRender(x)
         })
         observeEvent(input[[paste("pool", x, sep = "_")]],{
