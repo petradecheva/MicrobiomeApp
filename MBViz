@@ -16,6 +16,15 @@ library(cowplot)
 memory.limit(size=10240)
 options(shiny.host = '192.168.0.121')
 options(shiny.port = 8080)
+temp_mt <- tempfile(fileext = ".xslx")
+download.file("https://drive.google.com/uc?export=download&id=1FONSUatuxe9Imn6-XBL2b3Km0uo2rBLr",
+              temp_mt)
+temp_otu <- tempfile(fileext = "tsv")
+download.file("https://drive.google.com/uc?export=download&id=1IPq_fPgU2ZTbHLhrd6Ql-L4WnodXjjpQ",
+              temp_otu)
+temp_tax <- tempfile(fileext = "tsv")
+download.file("https://drive.google.com/uc?export=download&id=1IkpvPzLbZMyDgH1nJ393AFb2aS-w_RT2",
+              temp_tax)
 
 tid <<- 0 
 data_list <<- list()
@@ -126,23 +135,20 @@ ui <- fluidPage(
                                               <span class="help-block">
                                               
                                               You can use these files as reference: </span>
-                                              
-                                              <button id="exmp1" type="default" class="btn btn-default action-button btn-sm">
-                                              metadata
-                                              </button>
-                                              
-                                              <button id="exmp2" type="default" class="btn btn-default action-button btn-sm">
-                                              otu_counts
-                                              </button>
-                                              <button id="exmp3" type="default" class="btn btn-default action-button btn-sm">
-                                              taxonomy
-                                              </button>                                        
-                                              </div>
-                                              </div>
-                                              </form>
-                                              </div>
-                                              <br>
-                                              </div>)")
+                                        )"),
+                                        downloadButton("btemp_mt", "metadata"),
+                                        downloadButton("btemp_otu", "otu_counts"),
+                                        downloadButton("btemp_tax", "taxonomy"),
+                                        HTML(r"(
+                                             </div>
+                                             </div>
+                                             </form>
+                                             </div>
+                                             <br>
+                                             </div>)")
+
+
+
                                        )
   ))
   
@@ -151,6 +157,27 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   shinyInput <- function(name, id) paste(name, id, sep = "_")
   rv <- reactiveValues(counter = 0L)
+
+  observeEvent(input$btemp_mt, {
+    output$downloadData <- downloadHandler(
+      filename = function() {
+        paste("metadata", ".xslx", sep="")
+      },
+      content = function(file) {
+        write.s(data, file)
+      }
+    )
+  }, ignoreInit = TRUE)
+
+  observeEvent(input$btemp_otu, {
+    rv$counter <- rv$counter + 1L
+    updateTabsetPanel(session, "tabs", shinyInput("new_tab", rv$counter))
+  }, ignoreInit = TRUE)
+
+  observeEvent(input$btemp_tax, {
+    rv$counter <- rv$counter + 1L
+    updateTabsetPanel(session, "tabs", shinyInput("new_tab", rv$counter))
+  }, ignoreInit = TRUE)
   
   #go to the new created tab
   observeEvent(input$add, {
@@ -531,3 +558,4 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+
