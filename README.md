@@ -14,6 +14,7 @@
 - Generate multiple plots based on information from tables
 - Filter data, reset plots, visualize more by using sliders, dropdown and checkbox controls: 
   - *Change treshold level with a slider*
+ <a href="https://drive.google.com/uc?export=view&id=1u0Ym2pVXIGqQ420Pp7WEXj75Z9GL8lfW"><img src="https://drive.google.com/uc?export=view&id=1u0Ym2pVXIGqQ420Pp7WEXj75Z9GL8lfW" style="width: 30%; max-width: 100%; height: auto" title="rec1" />
   - *Change type of plot visualization from a dropdown menu (pie chart or bar chart)*
   - *Change taxonomic level from a dropdown menu* 
   - *Panel view with every plot by checking and unchecking a checkbox*
