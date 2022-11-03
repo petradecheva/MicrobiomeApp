@@ -2,7 +2,13 @@
 
 <a href="https://drive.google.com/uc?export=view&id=1zETGzCT9MXmVxVBUnbjc2eWJQ5ZDBTPB"><img src="https://drive.google.com/uc?export=view&id=1zETGzCT9MXmVxVBUnbjc2eWJQ5ZDBTPB" style="width: 30%; max-width: 100%; height: auto" title="Click to enlarge picture" align="right" />
 
-Visualize plots based on a human microbiome by uploading tables using R/Shiny.
+```diff
+  @@ Visualize plots based on a human microbiome by uploading tables using R/Shiny.@@
+```
+  
+## About the microbiome
+  
+  A microbiome is a community of micro organisms living in an ecosystem. This project will be focusing on the human one (the micro organisms living in us).
 
 ## Features
 
@@ -23,7 +29,7 @@ Visualize plots based on a human microbiome by uploading tables using R/Shiny.
 5. Add more plots by going to the menu or remove one at a time by pressing the "Remove" button on the plot you want to be deleted
 
 ## Running locally (Step by step)
-
+  
 ## Future ideas
   - App functioning with BIOM files
 
