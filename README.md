@@ -33,12 +33,12 @@ Visualize plots based on a human microbiome by uploading tables using R/Shiny.
   | --- | --- | --- | --- |
   | 1. | ID of the sample | Type of the case | ... |
   
-    ###### Subsample.shared(OTU) file: 
+  ###### Subsample.shared(OTU) file: 
   | Group | Otu0001 | ... |
   | --- | --- | --- |
   | DA00006 | value | ... |
   
-    ###### Taxonomy file: 
+  ###### Taxonomy file: 
   | OTU | Taxonomy | ... |
   | --- | --- | --- |
   | Otu0001 | Bacteria(100);Bacteroidetes(100);... | ... |
