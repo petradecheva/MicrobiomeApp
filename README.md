@@ -2,7 +2,7 @@
 
 Visualize plots based on a human microbiome by uploading tables using R/Shiny.
 
-## Features
+## Features :ballot_box_with_check:	
 
 - Generate multiple plots based on information from tables
 - Filter data, reset plots, visualize more by using sliders, dropdown and checkbox controls: 
