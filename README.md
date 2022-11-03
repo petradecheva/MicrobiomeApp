@@ -13,7 +13,7 @@ Visualize plots based on a human microbiome by uploading tables using R/Shiny.
 - Change between plots from navigation bar menu
 - Remove any unwanted tab with a plot 
 
-## Setup
+## Setup/User manual
 1. Go to the website
 2. Upload needed files (*description :bookmark_tabs: is to the right, if new - download reference files from the "Read Me" box and upload them instead*)
 3. Press the "Add" button
