@@ -22,4 +22,4 @@ Visualize plots based on a human microbiome by uploading tables using R/Shiny.
 5. Add more plots by going to the menu or remove one at a time by pressing the "Remove" button on the plot you want to be deleted
 
 ## How are the tables supposed to look like?
-  ###Metadata file: 
+  ######Metadata file: 
