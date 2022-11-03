@@ -23,3 +23,6 @@ Visualize plots based on a human microbiome by uploading tables using R/Shiny.
 
 ## How are the tables supposed to look like?
   ###### Metadata file: 
+  |  | sample_id | disease_stat |
+  | --- | --- |
+  | number | ID of the sample | Type of the case |
