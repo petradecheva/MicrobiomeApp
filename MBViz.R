@@ -11,20 +11,21 @@ library(shinydashboard)
 library(tools)
 library(gridExtra)
 library(cowplot)
-
+library(xlsx)
 
 memory.limit(size=10240)
 options(shiny.host = '192.168.0.121')
 options(shiny.port = 8080)
-temp_mt <- tempfile(fileext = ".xslx")
+temp_mt <- tempfile(fileext = ".xlsx")
 download.file("https://drive.google.com/uc?export=download&id=1FONSUatuxe9Imn6-XBL2b3Km0uo2rBLr",
-              temp_mt)
-temp_otu <- tempfile(fileext = "tsv")
+              temp_mt, quiet = TRUE, mode = "wb")
+temp_otu <- tempfile(fileext = ".tsv")
 download.file("https://drive.google.com/uc?export=download&id=1IPq_fPgU2ZTbHLhrd6Ql-L4WnodXjjpQ",
-              temp_otu)
-temp_tax <- tempfile(fileext = "tsv")
+              temp_otu, quiet = TRUE, mode = "wb")
+temp_tax <- tempfile(fileext = ".tsv")
 download.file("https://drive.google.com/uc?export=download&id=1IkpvPzLbZMyDgH1nJ393AFb2aS-w_RT2",
-              temp_tax)
+              temp_tax, quiet = TRUE, mode = "wb")
+print(temp_mt)
 
 tid <<- 0 
 data_list <<- list()
@@ -158,26 +159,32 @@ server <- function(input, output, session) {
   shinyInput <- function(name, id) paste(name, id, sep = "_")
   rv <- reactiveValues(counter = 0L)
 
-  observeEvent(input$btemp_mt, {
-    output$downloadData <- downloadHandler(
+    output$btemp_mt <- downloadHandler(
       filename = function() {
-        paste("metadata", ".xslx", sep="")
+        paste("metadata", ".xlsx", sep="")
       },
       content = function(file) {
-        write.s(data, file)
+        write.xlsx(read_excel(temp_mt), file)
       }
     )
-  }, ignoreInit = TRUE)
 
-  observeEvent(input$btemp_otu, {
-    rv$counter <- rv$counter + 1L
-    updateTabsetPanel(session, "tabs", shinyInput("new_tab", rv$counter))
-  }, ignoreInit = TRUE)
+    output$btemp_otu <- downloadHandler(
+      filename = function() {
+        paste("otu_counts", ".tsv", sep="")
+      },
+      content = function(file) {
+        write.table(read_tsv(temp_otu), file, quote=FALSE, sep='\t', col.names = NA)
+      }
+    )
 
-  observeEvent(input$btemp_tax, {
-    rv$counter <- rv$counter + 1L
-    updateTabsetPanel(session, "tabs", shinyInput("new_tab", rv$counter))
-  }, ignoreInit = TRUE)
+    output$btemp_tax <- downloadHandler(
+      filename = function() {
+        paste("taxonomy", ".tsv", sep="")
+      },
+      content = function(file) {
+        write.table(read_tsv(temp_tax), file, quote=FALSE, sep='\t', col.names = NA)
+      }
+    )
   
   #go to the new created tab
   observeEvent(input$add, {
