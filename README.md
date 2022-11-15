@@ -28,8 +28,8 @@
 
 ## Running locally (Step by step)
   ##### On Windows:
-         1. Open Command Prompt (with administration rights if needed)
-         2. Type `ipconfig`
+  1. Open Command Prompt (with administration rights if needed)
+  2. Type `ipconfig`
 
 ## Future ideas
   - Incorporating other input fomats, such as BIOM
