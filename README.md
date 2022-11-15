@@ -3,23 +3,21 @@
 <a href="https://drive.google.com/uc?export=view&id=1zETGzCT9MXmVxVBUnbjc2eWJQ5ZDBTPB"><img src="https://drive.google.com/uc?export=view&id=1zETGzCT9MXmVxVBUnbjc2eWJQ5ZDBTPB" style="width: 30%; max-width: 100%; height: auto" title="Microbiome" align="right" />
 
 
- Visualize plots based on a human microbiome by uploading tables using R/Shiny.
+ Visualize microbiome abundance by uploading tables using R/Shiny.
   
 ## About the microbiome
   
-  A microbiome is a community of micro organisms living in an ecosystem. This project will be focusing on the human one (the micro organisms living in us).
+  A microbiome is a community of micro organisms(bacteria, fungi, viruses) living in a particular ecosystem. 
 
 ## Features
 
-- Generate multiple plots based on information from tables
-- Filter data, reset plots, visualize more by using sliders, dropdown and checkbox controls: 
-  - *Change treshold level with a slider*
+- Generate bar plots and pie charts with input from tables
+  - *Change treshold level of  with a slider*
  <a href="https://drive.google.com/uc?export=view&id=1u0Ym2pVXIGqQ420Pp7WEXj75Z9GL8lfW"><img src="https://drive.google.com/uc?export=view&id=1u0Ym2pVXIGqQ420Pp7WEXj75Z9GL8lfW" style="width: 100%; max-width: 100%; height: auto" title="rec1" align="left" />
   - *Change type of plot visualization from a dropdown menu (pie chart or bar chart)*
   - *Change taxonomic level from a dropdown menu* 
-  - *Panel view with every plot by checking and unchecking a checkbox*
+  - *Panel view with all plots enabled by a checkbox*
 - Change between plots from navigation bar menu
-- Remove any unwanted tab with a plot 
 
 ## Setup/User manual
 1. Go to the website
@@ -31,20 +29,20 @@
 ## Running locally (Step by step)
   
 ## Future ideas
-  - App functioning with BIOM files
+  - Incorporating other input fomats, such as BIOM
 
-## How are the tables supposed to look like?
+## Input format:
   ###### Metadata file: 
   |  | sample_id | disease_stat | ... |
   | --- | --- | --- | --- |
-  | 1. | ID of the sample | Type of the case | ... |
+  | 1. | Sample ID | Sample type | ... |
   
   ###### Subsample.shared(OTU) file: 
-  | Group | Otu0001 | ... |
-  | --- | --- | --- |
-  | DA00006 | value | ... |
+  | label | Group | numOTUs | Otu0001... | ... |
+  | --- | --- | --- | --- | --- |
+  | Label | Sample type | OTU's sum | number of specific OTU | ... |
   
   ###### Taxonomy file: 
-  | OTU | Taxonomy | ... |
-  | --- | --- | --- |
-  | Otu0001 | Bacteria(100);Bacteroidetes(100);... | ... |
+  | OTU | Size | Taxonomy | ... |
+  | --- | --- | --- | --- |
+  | OTU label | Number of sequences in the OTU| Consensus taxonomy | ... |
