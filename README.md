@@ -27,7 +27,10 @@
 5. Add more plots by going to the menu or remove one at a time by pressing the "Remove" button on the plot you want to be deleted
 
 ## Running locally (Step by step)
-  
+  ##### On Windows:
+         1. Open Command Prompt (with administration rights if needed)
+         2. Type `ipconfig`
+
 ## Future ideas
   - Incorporating other input fomats, such as BIOM
 
