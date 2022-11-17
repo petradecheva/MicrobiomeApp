@@ -13,9 +13,12 @@ library(gridExtra)
 library(cowplot)
 library(xlsx)
 
-memory.limit(size=10240)
-options(shiny.host = '192.168.0.121')
-options(shiny.port = 8080)
+#configuration options
+#don't touch if you don't know what you're doing
+#memory.limit(size=10240)
+#options(shiny.host = '192.168.0.121')
+#options(shiny.port = 8080)
+
 temp_mt <- tempfile(fileext = ".xlsx")
 download.file("https://drive.google.com/uc?export=download&id=1FONSUatuxe9Imn6-XBL2b3Km0uo2rBLr",
               temp_mt, quiet = TRUE, mode = "wb")
@@ -259,24 +262,17 @@ server <- function(input, output, session) {
       mutate(taxon = factor(taxon),
              taxon = fct_reorder(taxon, mean, .desc=TRUE),
              taxon = fct_shift(taxon, n=1))
-    #print(c(df))
-    #print(df$taxon)
     data_list[[tid]] <<- as.data.frame(df)
     ora_list[[tid]] <<- as.data.frame(otu_rel_abund)
     
     #creating plot
     pl_list[[tid]] <- ggplot(data_list[[tid]], aes(x="", y=mean_rel_abund, fill=taxon)) +
       geom_bar(stat="identity", width=1) +
-      # facet_grid(.~ dfg$disease_stat)+
       theme_classic() +
       theme(axis.line = element_blank(),
             axis.text = element_blank(),
-            axis.ticks = element_blank())
+            axis.ticks = element_blank())  
     
-    #print(paste("Before append:", data_list[[tid]]$disease_stat ))
-    #output$plot <- render....
-    
-    #finally creating tab after data processing and plot creation
     appendTab(inputId = "tabs", tabPanel(title = input$caption, value = tid, 
                                          headerPanel('Microbiome'),
                                          sidebarLayout(
@@ -299,17 +295,10 @@ server <- function(input, output, session) {
                                            )
                                          )
                                          
-    ), select = TRUE)
-    
-    
-    #print(pl_list[[tid]])
-    #print(paste("After append", data_list[[tid]]$disease_stat))
-    ##########################
-    #print(inputs)
+    ), select = TRUE)       
     
   })
   
-  ## REACTIVITY TO ARRANGE TAB NAMES:
   current.tab <- eventReactive(input$tabs, {
     # don't accidentally remove main tab:
     if (!identical(input$tabs, "home")) {
@@ -356,8 +345,6 @@ server <- function(input, output, session) {
       print(paste("disease_stat:", dfg$disease_stat))
       
     }
-    # filter(disease_stat == input[[paste("case", x, sep = "_")]])
-    #print(paste("this is dfg disease_stat:", dfg$disease_stat))
     v2 <- rainbow(length(dfg$taxon))
     names(v2) <- unique(dfg$taxon)
     print(length(names(v2)))
@@ -368,13 +355,9 @@ server <- function(input, output, session) {
     }
     else
     {
-      v2["Other"] = "#808080"
-      
+      v2["Other"] = "#808080"      
     }
-    #print(pl_list[[x]])
-    #overwriting the first created plot on the tab with the newly created one based on the new data
-    barchart <- function(){
-      
+    barchart <- function(){    
       if(input[[paste("panel", x, sep = "_")]]){
         samples <- unique(dfg$disease_stat)
         ptlist <- list()
@@ -405,11 +388,7 @@ server <- function(input, output, session) {
           
           ptlist[[i]] <- pl 
         }
-        # plot_grid(ptlist, ncol = 2)
-        # do.call("grid.arrange", c(ptlist, ncol = 2))  
         do.call("plot_grid", c(ptlist, ncol = 2))
-        # grid.arrange(plist, ncol=2)
-        # plist + plot_layout(ncol = 2)
         
       } else{
         v2 <- rainbow(length(dfg$taxon))
@@ -467,10 +446,7 @@ server <- function(input, output, session) {
                   axis.text = element_blank(),
                   axis.ticks = element_blank(),
                   legend.text = element_markdown(),
-                  legend.key.size = unit(18, "pt"))
-          
-          # renderBillboarder({billboarder() %>% bb_piechart(plist) %>% bb_legend(position = 'right')})
-          
+                  legend.key.size = unit(18, "pt"))                   
           
           ptlist[[i]] <- pl
         }
@@ -496,15 +472,12 @@ server <- function(input, output, session) {
                fill = input[[paste("class", x, sep="_")]]) +
           coord_polar("y", start=0) +
           scale_fill_manual(values = v2, labels=paste(gsub('\\*', '', dfg$taxon), str_replace_all(paste(round(dfg$mean_rel_abund, 1),"%"), " ", "")))+
-          # facet_grid(.~ data2()$disease_stat)+
           theme_classic() +
           theme(axis.line = element_blank(),
                 axis.text = element_blank(),
                 axis.ticks = element_blank(),
                 legend.text = element_markdown(),
-                legend.key.size = unit(18, "pt"))
-        # renderBillboarder({billboarder() %>% bb_piechart(data2()) %>% bb_legend(position = 'right')})
-        
+                legend.key.size = unit(18, "pt"))        
       }
       
     }
@@ -552,9 +525,7 @@ server <- function(input, output, session) {
     if (rv$counter > 0L) {
       lapply(seq(rv$counter), function(x) {
         observeEvent(input[[paste("remove_btn", x, sep = "_")]], {
-          #print(paste0("This is x: ",x))
           removeTab(inputId = "tabs", target = current.tab())
-          #print(paste0("Removing: ", input[[paste("remove_btn", x, sep = "_")]]))
         })
       })
     }
