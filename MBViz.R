@@ -199,9 +199,6 @@ server <- function(input, output, session) {
   observeEvent(input$add, {
     tid <<- tid + 1
     inputs <- reactiveValues(input1 = input$probe1, input2 = input$probe2, input3 = input$probe3)
-    # print(inputs)
-    # print(paste0("This is input1: ", inputs$input1))
-    #data_list <<- append(data_list,
     
     #data processing
     metadata <- read_excel(inputs$input1$datapath, na="NA") %>%
