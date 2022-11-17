@@ -20,7 +20,7 @@
 - Change between plots from navigation bar menu
 
 ## Setup/User manual
-1. Go to the website
+1. Go to http://microbiomeviztool.online
 2. Upload needed files (*description :bookmark_tabs: is to the right, if new - download 📥 the reference files from the "Read Me" box and upload them instead*)
 3. Press the "Add" button
 4. Once the plot is visualized, use the controls to the left to filter data and update plots 
