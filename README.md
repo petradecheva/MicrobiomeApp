@@ -7,12 +7,11 @@
   
 ## About the microbiome
   
-  A microbiome is a community of micro organisms(bacteria, fungi, viruses) living in a particular ecosystem. 
-
+  A microbiome is a community of micro organisms (bacteria, fungi, viruses) living in a particular ecosystem. 
 ## Features
 
-- Generate bar plots and pie charts with input from tables
-  - *Change treshold level of  with a slider*
+- Generate bar plots and pie charts with input from tables:
+  - *Change treshold level (of what?) with a slider (for the purpose of what?)*
  <a href="https://drive.google.com/uc?export=view&id=1u0Ym2pVXIGqQ420Pp7WEXj75Z9GL8lfW"><img src="https://drive.google.com/uc?export=view&id=1u0Ym2pVXIGqQ420Pp7WEXj75Z9GL8lfW" style="width: 100%; max-width: 100%; height: auto" title="rec1" align="left" />
   - *Change type of plot visualization from a dropdown menu (pie chart or bar chart)*
   - *Change taxonomic level from a dropdown menu* 
@@ -20,21 +19,19 @@
 - Change between plots from navigation bar menu
 
 ## Setup/User manual
-1. Go to http://microbiomeviztool.online
-2. Upload needed files (*description :bookmark_tabs: is to the right, if new - download 📥 the reference files from the "Read Me" box and upload them instead*)
-3. Press the "Add" button
-4. Once the plot is visualized, use the controls to the left to filter data and update plots 
+1. Go to the website
+2. Upload (what files? Extensions and what they contain) or provided exmples
+3. Press "Add" 
+4. Once the plot is visualized, use the controls to the left to filter and update 
 5. Add more plots by going to the menu or remove one at a time by pressing the "Remove" button on the plot you want to be deleted
 
 ## Running locally (Step by step)
-  ##### On Windows:
-  1. Open Command Prompt (with administration rights if needed)
-  2. Type `ipconfig`
-
+  
 ## Future ideas
-  - Incorporating other input fomats, such as BIOM
+  - Incorporating other input formats, such as BIOM 
 
 ## Input format:
+
   ###### Metadata file: 
   |  | sample_id | disease_stat | ... |
   | --- | --- | --- | --- |
