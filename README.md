@@ -6,8 +6,8 @@
  Visualize microbiome abundance by uploading tables using R/Shiny.
 
 ## Notes 
- A fragment of the code from another project has been added to this one with educational purposes.
- The app can be used by only one user at a time.
+ - A fragment of the code from another project has been added to this one with educational purposes.
+ - The app can be used by only one user at a time.
  
 ## About the microbiome
   
