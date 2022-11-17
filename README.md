@@ -20,7 +20,7 @@
 
 ## Setup/User manual
 1. Go to the website
-2. Upload (what files? Extensions and what they contain) or provided exmples
+2. Upload needed files (explanation is to the right in the app)
 3. Press "Add" 
 4. Once the plot is visualized, use the controls to the left to filter and update 
 5. Add more plots by going to the menu or remove one at a time by pressing the "Remove" button on the plot you want to be deleted
